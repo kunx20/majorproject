@@ -80,7 +80,8 @@ def retrieve_top_chunks(query: str, index_filename: str, metadata_filename: str,
             "end_word": item["end_word"],
             "semantic_score": float(semantic_norm[i]),
             "keyword_score": float(bm25_norm[i]),
-            "hybrid_score": hybrid_score
+            "hybrid_score": hybrid_score,
+            "score": hybrid_score
         })
 
     results.sort(key=lambda x: x["hybrid_score"], reverse=True)
