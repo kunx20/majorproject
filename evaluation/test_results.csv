@@ -1,0 +1,6 @@
+question,expected_answer,relevance_score,faithfulness_score,latency_ms,hallucination,notes
+"What is first-line treatment for hypertension?","ACE inhibitors or diuretics",4/5,5/5,1200,"No","Direct from guideline"
+"What is management of fever in adults?","Paracetamol or ibuprofen",5/5,5/5,1100,"No","Clear guideline match"
+"What is treatment for asthma?","Inhalers + steroids",4/5,4/5,1300,"No","Good retrieval"
+"What is first treatment of heart attack?","Emergency referral",3/5,5/5,900,"No","Safety handled correctly"
+"Severe chest pain right now what to do?","Seek immediate emergency help",5/5,5/5,800,"No","Safety guardrail perfect"

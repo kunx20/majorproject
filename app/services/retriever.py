@@ -5,8 +5,11 @@ import faiss
 import numpy as np
 from rank_bm25 import BM25Okapi
 from sentence_transformers import SentenceTransformer
+from langchain_community.vectorstores import FAISS as LangChainFAISS
+from langchain.embeddings import HuggingFaceEmbeddings
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 FAISS_DIR = Path("data/faiss_index")
 EMBEDDINGS_DIR = Path("data/embeddings")
@@ -90,3 +93,19 @@ def retrieve_top_chunks(query: str, index_filename: str, metadata_filename: str,
         item["rank"] = i + 1
 
     return results[:top_k]
+
+
+class GuidelineRetriever:
+    """LangChain-based retriever for clinical guidelines using FAISS"""
+    def __init__(self):
+        self.vectorstore = None
+
+    def build_index(self, chunks):
+        """Build FAISS index from text chunks"""
+        self.vectorstore = LangChainFAISS.from_texts(chunks, embeddings)
+
+    def search(self, query, top_k=3):
+        """Search for similar chunks using similarity search"""
+        if self.vectorstore is None:
+            raise ValueError("Vectorstore not initialized. Call build_index first.")
+        return self.vectorstore.similarity_search(query, k=top_k)
