@@ -17,13 +17,6 @@ pytest tests/ -v
 - Test counts and coverage
 - Next steps
 
-### 🎓 I Want to Learn Testing Concepts
-→ Read: [VISUAL_TESTING_GUIDE.md](VISUAL_TESTING_GUIDE.md)
-- Black Box vs White Box explained visually
-- Real scenario examples
-- When to use each type
-- Testing pyramid
-
 ### 📚 I Want Complete Details
 → Read: [TESTING_GUIDE.md](TESTING_GUIDE.md)
 - Comprehensive explanation
@@ -45,10 +38,9 @@ pytest tests/ -v
 
 | Document | Pages | Purpose |
 |----------|-------|---------|
-| [COMPLETE_TESTING_SETUP.md](COMPLETE_TESTING_SETUP.md) | 3 | What was created, summary, next steps |
-| [TEST_QUICK_REFERENCE.md](TEST_QUICK_REFERENCE.md) | 3 | Quick commands, patterns, assertions |
-| [VISUAL_TESTING_GUIDE.md](VISUAL_TESTING_GUIDE.md) | 4 | Concepts explained visually with examples |
 | [TESTING_GUIDE.md](TESTING_GUIDE.md) | 5 | Complete detailed guide with code |
+| [TEST_QUICK_REFERENCE.md](TEST_QUICK_REFERENCE.md) | 3 | Quick commands, patterns, assertions |
+| [COMPLETE_TESTING_SETUP.md](COMPLETE_TESTING_SETUP.md) | 3 | What was created, summary, next steps |
 | [TESTING_SUMMARY.md](TESTING_SUMMARY.md) | 2 | High-level overview |
 
 ---
@@ -73,7 +65,6 @@ tests/
 docs/
 ├── ⭐ TESTING_GUIDE.md          (NEW - Complete guide)
 ├── ⭐ TEST_QUICK_REFERENCE.md   (NEW - Quick ref)
-├── ⭐ VISUAL_TESTING_GUIDE.md   (NEW - Visual learn)
 ├── ⭐ TESTING_SUMMARY.md        (NEW - Overview)
 ├── ⭐ COMPLETE_TESTING_SETUP.md (NEW - What's added)
 └── ⭐ TESTING_INDEX.md          (THIS FILE)
@@ -130,9 +121,9 @@ pytest tests/test_black_box_api.py::TestAskEndpoint::test_ask_with_valid_questio
 ## For Different Learning Styles
 
 ### Visual Learners
-1. Start: [VISUAL_TESTING_GUIDE.md](VISUAL_TESTING_GUIDE.md)
+1. Start: [TESTING_GUIDE.md](TESTING_GUIDE.md) with diagrams
 2. Then: Look at actual test files in `tests/`
-3. Finally: Read [TESTING_GUIDE.md](TESTING_GUIDE.md)
+3. Finally: Explore specific test patterns
 
 ### Detail-Oriented Learners
 1. Start: [TESTING_GUIDE.md](TESTING_GUIDE.md)
@@ -200,14 +191,14 @@ Together they ensure:
 
 ## File-by-File Guide
 
-### [COMPLETE_TESTING_SETUP.md](COMPLETE_TESTING_SETUP.md)
-**Best for**: Getting overview of what was created
-- What files were added
-- How many tests
-- Quick start commands
-- Next steps
-- Coverage summary
-**Read time**: 5-10 minutes
+### [TESTING_GUIDE.md](TESTING_GUIDE.md)
+**Best for**: Learning complete testing strategy
+- Detailed explanations with diagrams
+- Code examples
+- Best practices
+- Test patterns
+- Organization strategies
+**Read time**: 20-30 minutes
 
 ### [TEST_QUICK_REFERENCE.md](TEST_QUICK_REFERENCE.md)
 **Best for**: Looking up commands while coding
@@ -217,22 +208,14 @@ Together they ensure:
 - Debugging tips
 **Read time**: 5 minutes (bookmark this!)
 
-### [VISUAL_TESTING_GUIDE.md](VISUAL_TESTING_GUIDE.md)
-**Best for**: Understanding concepts visually
-- Side-by-side comparisons
-- Pyramid diagrams
-- Real examples from your project
-- When to use each type
-**Read time**: 10-15 minutes
-
-### [TESTING_GUIDE.md](TESTING_GUIDE.md)
-**Best for**: Learning complete testing strategy
-- Detailed explanations
-- Code examples
-- Best practices
-- Test patterns
-- Organization strategies
-**Read time**: 20-30 minutes
+### [COMPLETE_TESTING_SETUP.md](COMPLETE_TESTING_SETUP.md)
+**Best for**: Getting overview of what was created
+- What files were added
+- How many tests
+- Quick start commands
+- Next steps
+- Coverage summary
+**Read time**: 5-10 minutes
 
 ### [TESTING_SUMMARY.md](TESTING_SUMMARY.md)
 **Best for**: Quick high-level overview
@@ -268,7 +251,7 @@ A: In `tests/` directory - see [COMPLETE_TESTING_SETUP.md](COMPLETE_TESTING_SETU
 A: `pytest tests/ -v` - see [TEST_QUICK_REFERENCE.md](TEST_QUICK_REFERENCE.md)
 
 **Q: What's the difference?**
-A: Black box = API behavior, White box = internal logic - see [VISUAL_TESTING_GUIDE.md](VISUAL_TESTING_GUIDE.md)
+A: Black box = API behavior, White box = internal logic - see [TESTING_GUIDE.md](TESTING_GUIDE.md)
 
 **Q: How do I write new tests?**
 A: Follow patterns in [TESTING_GUIDE.md](TESTING_GUIDE.md)
@@ -281,10 +264,9 @@ A: Run `pytest tests/ --cov=app` to see detailed coverage
 ## Recommended Reading Order
 
 ### For Someone New to Testing
-1. [VISUAL_TESTING_GUIDE.md](VISUAL_TESTING_GUIDE.md) ← Start here! Visual & easy
+1. [TESTING_GUIDE.md](TESTING_GUIDE.md) ← Start here!
 2. [TEST_QUICK_REFERENCE.md](TEST_QUICK_REFERENCE.md) ← Run the commands
-3. [TESTING_GUIDE.md](TESTING_GUIDE.md) ← Understand details
-4. Review actual test files
+3. Review actual test files in `tests/`
 
 ### For Someone Who Knows Testing
 1. [COMPLETE_TESTING_SETUP.md](COMPLETE_TESTING_SETUP.md) ← What's new
@@ -302,7 +284,7 @@ A: Run `pytest tests/ --cov=app` to see detailed coverage
 
 If you need help with:
 - **Running tests** → [TEST_QUICK_REFERENCE.md](TEST_QUICK_REFERENCE.md)
-- **Understanding concepts** → [VISUAL_TESTING_GUIDE.md](VISUAL_TESTING_GUIDE.md)
+- **Understanding concepts** → [TESTING_GUIDE.md](TESTING_GUIDE.md)
 - **Writing new tests** → [TESTING_GUIDE.md](TESTING_GUIDE.md)
 - **Project overview** → [TESTING_SUMMARY.md](TESTING_SUMMARY.md)
 - **What was added** → [COMPLETE_TESTING_SETUP.md](COMPLETE_TESTING_SETUP.md)
@@ -316,4 +298,4 @@ You now have **comprehensive testing** with both:
 - ✅ **White Box Tests** (20) - Internal logic
 - ✅ **Documentation** - How to use and expand
 
-**Start with [COMPLETE_TESTING_SETUP.md](COMPLETE_TESTING_SETUP.md) or [VISUAL_TESTING_GUIDE.md](VISUAL_TESTING_GUIDE.md)** 🚀
+**Start with [TESTING_GUIDE.md](TESTING_GUIDE.md) for complete details or [TEST_QUICK_REFERENCE.md](TEST_QUICK_REFERENCE.md) for quick commands** 🚀
