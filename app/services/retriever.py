@@ -6,7 +6,7 @@ import numpy as np
 from rank_bm25 import BM25Okapi
 from sentence_transformers import SentenceTransformer
 from langchain_community.vectorstores import FAISS as LangChainFAISS
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
