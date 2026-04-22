@@ -8,8 +8,23 @@ from sentence_transformers import SentenceTransformer
 from langchain_community.vectorstores import FAISS as LangChainFAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# Lazy load models
+_model = None
+_embeddings = None
+
+def _get_model():
+    """Lazy load SentenceTransformer model only when needed"""
+    global _model
+    if _model is None:
+        _model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _model
+
+def _get_embeddings():
+    """Lazy load HuggingFaceEmbeddings only when needed"""
+    global _embeddings
+    if _embeddings is None:
+        _embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    return _embeddings
 
 FAISS_DIR = Path("data/faiss_index")
 EMBEDDINGS_DIR = Path("data/embeddings")
@@ -44,6 +59,7 @@ def retrieve_top_chunks(query: str, index_filename: str, metadata_filename: str,
 
     documents = [item["text"] for item in metadata]
 
+    model = _get_model()
     query_embedding = model.encode([query]).astype("float32")
     distances, indices = index.search(query_embedding, min(10, len(documents)))
 
@@ -102,6 +118,7 @@ class GuidelineRetriever:
 
     def build_index(self, chunks):
         """Build FAISS index from text chunks"""
+        embeddings = _get_embeddings()
         self.vectorstore = LangChainFAISS.from_texts(chunks, embeddings)
 
     def search(self, query, top_k=3):
