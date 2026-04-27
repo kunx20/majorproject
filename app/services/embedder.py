@@ -1,4 +1,3 @@
-from sentence_transformers import SentenceTransformer
 import numpy as np
 
 _model = None
@@ -7,6 +6,7 @@ def _get_model():
     """Lazy load the model only when needed"""
     global _model
     if _model is None:
+        from sentence_transformers import SentenceTransformer
         _model = SentenceTransformer("all-MiniLM-L6-v2")
     return _model
 

@@ -4,9 +4,7 @@ import re
 import faiss
 import numpy as np
 from rank_bm25 import BM25Okapi
-from sentence_transformers import SentenceTransformer
 from langchain_community.vectorstores import FAISS as LangChainFAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # Lazy load models
 _model = None
@@ -16,6 +14,7 @@ def _get_model():
     """Lazy load SentenceTransformer model only when needed"""
     global _model
     if _model is None:
+        from sentence_transformers import SentenceTransformer
         _model = SentenceTransformer("all-MiniLM-L6-v2")
     return _model
 
@@ -23,6 +22,7 @@ def _get_embeddings():
     """Lazy load HuggingFaceEmbeddings only when needed"""
     global _embeddings
     if _embeddings is None:
+        from langchain_community.embeddings import HuggingFaceEmbeddings
         _embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     return _embeddings
 
