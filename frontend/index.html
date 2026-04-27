@@ -45,6 +45,27 @@
             animation: fadeInUp 0.5s ease;
         }
 
+        .select-wrap {
+            position: relative;
+        }
+
+        .topic-select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            padding-right: 3rem;
+        }
+
+        .select-chevron {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            font-size: 0.95rem;
+            color: #4b5563;
+        }
+
         .modal-fade {
             animation: fadeIn 0.25s ease;
         }
@@ -164,6 +185,21 @@
                         placeholder="Example: What is the first-line treatment for hypertension?"
                         class="w-full rounded-2xl border border-gray-200 bg-white/80 px-5 py-4 text-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     ></textarea>
+
+                    <div class="mt-4 select-wrap">
+                        <label for="quickQuestion" class="block text-sm font-semibold text-gray-600 mb-2">Quick question dropdown</label>
+                        <select
+                            id="quickQuestion"
+                            class="topic-select w-full rounded-2xl border border-gray-200 bg-white/80 px-5 py-3 text-base text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="">Choose a sample clinical question</option>
+                            <option value="What is the first-line treatment for hypertension?">Hypertension first-line treatment</option>
+                            <option value="What lifestyle changes are recommended for hypertension?">Lifestyle changes for hypertension</option>
+                            <option value="When should beta blockers be used?">When to use beta blockers</option>
+                            <option value="What are common contraindications for ACE inhibitors?">ACE inhibitor contraindications</option>
+                        </select>
+                        <span class="select-chevron" aria-hidden="true">▼</span>
+                    </div>
 
                     <div class="flex flex-wrap gap-3 mt-5">
                         <button
@@ -363,9 +399,16 @@
         const askBtn = document.getElementById('askBtn');
         const clearBtn = document.getElementById('clearBtn');
         const questionInput = document.getElementById('questionInput');
+        const quickQuestion = document.getElementById('quickQuestion');
         const answerSection = document.getElementById('answerSection');
         const answerText = document.getElementById('answerText');
         const citationsBox = document.getElementById('citationsBox');
+
+        quickQuestion.addEventListener('change', () => {
+            if (quickQuestion.value) {
+                questionInput.value = quickQuestion.value;
+            }
+        });
 
         askBtn.addEventListener('click', async () => {
             const question = questionInput.value.trim();
@@ -432,6 +475,7 @@
 
         clearBtn.addEventListener('click', () => {
             questionInput.value = '';
+            quickQuestion.value = '';
             answerSection.classList.add('hidden');
             citationsBox.innerHTML = `
                 <div class="p-4 rounded-2xl bg-white/70 border border-gray-200">
