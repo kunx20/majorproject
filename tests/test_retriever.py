@@ -1,6 +1,7 @@
 import json
 import tempfile
 from pathlib import Path
+from unittest.mock import Mock
 
 import faiss
 import numpy as np
@@ -34,7 +35,10 @@ def test_retrieve_top_chunks_returns_ranked_results(monkeypatch):
         index_path = faiss_dir / "test.index"
         faiss.write_index(index, str(index_path))
 
-        monkeypatch.setattr(retriever.model, "encode", lambda texts: np.array([[1.0, 0.0]], dtype="float32"))
+        # Mock the _get_model function to return a mock model with encode method
+        mock_model = Mock()
+        mock_model.encode = lambda texts: np.array([[1.0, 0.0]], dtype="float32")
+        monkeypatch.setattr(retriever, "_get_model", lambda: mock_model)
 
         results = retriever.retrieve_top_chunks(
             query="query text",
