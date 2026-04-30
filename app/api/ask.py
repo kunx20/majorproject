@@ -2,6 +2,8 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.ask import AskRequest, AskResponse, Citation
 from app.services.retriever import retrieve_top_chunks
 from app.core.safety import is_unsafe_medical_query, get_safety_message
+from app.core.config import settings
+from app.services.llm import generate_answer_with_ollama_chat
 
 router = APIRouter()
 
@@ -101,7 +103,29 @@ def filter_relevant_sentences(question: str, text: str):
     return '. '.join(relevant_sentences[:3]).strip()
 
 def build_clean_answer(question: str, results):
-    """Build a clean, accurate answer from retrieved results"""
+    """Build answer using Ollama LLM if enabled, otherwise use rule-based approach"""
+    if not results:
+        return "Sorry, I could not find information about this topic in the clinical guidelines."
+
+    # Combine retrieved chunks as context for the LLM
+    context = "\n\n".join([item["text"] for item in results[:3]])
+
+    if settings.USE_LLM:
+        try:
+            # Use Ollama to generate answer from context
+            answer = generate_answer_with_ollama_chat(question, context)
+            return answer
+        except Exception as e:
+            print(f"LLM generation failed: {e}. Falling back to rule-based approach.")
+            # Fallback to rule-based approach if LLM fails
+            return build_rule_based_answer(question, results)
+    else:
+        # Use rule-based approach
+        return build_rule_based_answer(question, results)
+
+
+def build_rule_based_answer(question: str, results):
+    """Build a clean, accurate answer using rule-based approach (legacy)"""
     if not results:
         return "Sorry, I could not find information about this topic in the clinical guidelines."
 
