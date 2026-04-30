@@ -2,64 +2,47 @@ import ollama
 from app.core.config import settings
 
 
-def generate_answer_with_ollama(question: str, context: str) -> str:
-    """
-    Generate an answer using Ollama LLM based on retrieved context.
-    
-    Args:
-        question: The user's question
-        context: The clinical guideline context from retrieved chunks
-        
-    Returns:
-        The LLM-generated answer
-    """
-    prompt = f"""You are a medical assistant. Answer the following question based ONLY on the provided clinical guidelines.
-Be concise, accurate, and avoid making up information not in the guidelines.
-If the guidelines don't contain enough information to answer, say so clearly.
-
-Question: {question}
-
-Clinical Guidelines Context:
-{context}
-
-Answer:"""
-    
-    try:
-        response = ollama.generate(
-            model=settings.OLLAMA_MODEL,
-            prompt=prompt,
-            stream=False,
-            options={
-                "temperature": 0.3,  # Low temperature for consistency
-                "top_p": 0.9,
-                "top_k": 40,
-            }
-        )
-        return response["response"].strip()
-    except Exception as e:
-        raise RuntimeError(f"Error generating answer with Ollama: {str(e)}")
-
-
 def generate_answer_with_ollama_chat(question: str, context: str) -> str:
     """
-    Alternative method using Ollama chat API for better quality responses.
+    Generate a medical answer using Ollama LLM based on retrieved clinical guidelines.
+    Optimized for accuracy, clarity, and medical precision.
     
     Args:
-        question: The user's question
+        question: The user's clinical question
         context: The clinical guideline context from retrieved chunks
         
     Returns:
-        The LLM-generated answer
+        A well-formatted, accurate medical answer
     """
+    # Optimized medical prompt for high-quality responses
+    system_prompt = """You are an expert medical information assistant specializing in clinical guidelines.
+
+Your role is to:
+1. Answer ONLY based on the provided clinical guidelines
+2. Provide clear, accurate, and evidence-based information
+3. Use medical terminology appropriately (don't over-simplify)
+4. Format answers in a structured, easy-to-read manner
+5. If information is insufficient, clearly state what's missing
+
+Never:
+- Invent or hallucinate medical information
+- Provide personal medical advice
+- Replace professional medical consultation
+- Include information not in the guidelines"""
+    
+    user_prompt = f"""Based on the clinical guidelines provided below, answer this question:
+
+QUESTION: {question}
+
+CLINICAL GUIDELINES:
+{context}
+
+ANSWER:
+Provide a clear, structured answer based only on the guidelines above."""
+    
     messages = [
-        {
-            "role": "system",
-            "content": "You are a medical assistant. Answer questions based ONLY on the provided clinical guidelines. Be concise and accurate. Do not invent information."
-        },
-        {
-            "role": "user",
-            "content": f"Question: {question}\n\nClinical Guidelines:\n{context}"
-        }
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
     ]
     
     try:
@@ -68,10 +51,31 @@ def generate_answer_with_ollama_chat(question: str, context: str) -> str:
             messages=messages,
             stream=False,
             options={
-                "temperature": 0.3,
+                "temperature": 0.2,  # Very low for medical accuracy
                 "top_p": 0.9,
+                "num_predict": 500,  # Limit response length
             }
         )
-        return response["message"]["content"].strip()
+        answer = response["message"]["content"].strip()
+        
+        # Clean up formatting
+        answer = clean_response(answer)
+        return answer
+        
     except Exception as e:
-        raise RuntimeError(f"Error generating answer with Ollama chat: {str(e)}")
+        raise RuntimeError(f"Error generating answer with Ollama: {str(e)}")
+
+
+def clean_response(text: str) -> str:
+    """Clean and format LLM response for better readability"""
+    # Remove excessive whitespace
+    lines = [line.strip() for line in text.split('\n') if line.strip()]
+    text = '\n'.join(lines)
+    
+    # Remove markdown formatting if present
+    text = text.replace('**', '').replace('__', '').replace('`', '')
+    
+    # Clean up common artifacts
+    text = text.replace('ANSWER:', '').replace('Answer:', '').strip()
+    
+    return text
