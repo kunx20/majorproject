@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List
 
 class AskRequest(BaseModel):
-    question: str = Field(..., min_length=5, max_length=500)
+    question: str = Field(..., min_length=3, max_length=500, description="Clinical question to answer")
 
 class Citation(BaseModel):
     source: str

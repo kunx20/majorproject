@@ -15,11 +15,9 @@ def ask_question(payload: AskRequest):
     """
     # Validate question
     if not payload.question or len(payload.question.strip()) < 3:
-        return AskResponse(
-            question=payload.question,
-            answer="Please provide a valid question (at least 3 characters).",
-            citations=[],
-            status="invalid_input"
+        raise HTTPException(
+            status_code=422,
+            detail="Question must be at least 3 characters long"
         )
     
     # Check for unsafe queries

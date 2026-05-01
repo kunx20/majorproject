@@ -1,11 +1,22 @@
 import ollama
 from app.core.config import settings
 
+# Test if Ollama is available at startup
+OLLAMA_AVAILABLE = False
+try:
+    # Try to connect to Ollama
+    ollama.list()
+    OLLAMA_AVAILABLE = True
+    print("✓ Ollama service is available")
+except Exception as e:
+    OLLAMA_AVAILABLE = False
+    print(f"✗ Warning: Ollama service not available - using fallback: {str(e)}")
+
 
 def generate_answer_with_ollama_chat(question: str, context: str) -> str:
     """
     Generate a medical answer using Ollama LLM based on retrieved clinical guidelines.
-    Optimized for accuracy, clarity, and medical precision.
+    Falls back to simple text extraction if Ollama is unavailable.
     
     Args:
         question: The user's clinical question
@@ -14,6 +25,10 @@ def generate_answer_with_ollama_chat(question: str, context: str) -> str:
     Returns:
         A well-formatted, accurate medical answer
     """
+    if not OLLAMA_AVAILABLE or not settings.USE_LLM:
+        # Fallback: Use simple context extraction
+        return generate_answer_fallback(question, context)
+    
     # Optimized medical prompt for high-quality responses
     system_prompt = """You are an expert medical information assistant specializing in clinical guidelines.
 
@@ -46,7 +61,7 @@ Provide a clear, structured answer based only on the guidelines above."""
     ]
     
     try:
-        # Configure GPU acceleration if available
+        # Configure generation options
         ollama_options = {
             "temperature": 0.2,  # Very low for medical accuracy
             "top_p": 0.9,
@@ -73,7 +88,17 @@ Provide a clear, structured answer based only on the guidelines above."""
         return answer
         
     except Exception as e:
-        raise RuntimeError(f"Error generating answer with Ollama: {str(e)}")
+        print(f"Ollama error: {e}, falling back to context extraction")
+        return generate_answer_fallback(question, context)
+
+
+def generate_answer_fallback(question: str, context: str) -> str:
+    """Fallback answer generation when Ollama is unavailable"""
+    # Clean up context and provide as-is with slight formatting
+    answer = context.strip()
+    if len(answer) > 500:
+        answer = answer[:500] + "..."
+    return answer
 
 
 def clean_response(text: str) -> str:
