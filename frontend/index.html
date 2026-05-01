@@ -594,7 +594,7 @@
       askBtn.innerHTML = '<span class="spinner"></span><span class="ml-2">Processing…</span>';
 
       try {
-        const response = await fetch('http://localhost:8000/api/ask', {
+        const response = await fetch('http://localhost:8001/api/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ question })
@@ -640,7 +640,7 @@
             <div>
               <p class="text-sm font-semibold" style="color:#F87171">Connection Error</p>
               <p class="text-sm mt-1" style="color:var(--muted)">${error.message}</p>
-              <p class="text-xs mt-2" style="color:var(--muted)">Ensure the FastAPI server is running at <code class="px-1 py-0.5 rounded text-xs" style="background:rgba(255,255,255,0.06)">localhost:8000</code></p>
+              <p class="text-xs mt-2" style="color:var(--muted)">Ensure the FastAPI server is running at <code class="px-1 py-0.5 rounded text-xs" style="background:rgba(255,255,255,0.06)">localhost:8001</code></p>
             </div>
           </div>`;
       } finally {
