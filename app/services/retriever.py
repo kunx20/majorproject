@@ -6,9 +6,12 @@ import numpy as np
 from rank_bm25 import BM25Okapi
 from langchain_community.vectorstores import FAISS as LangChainFAISS
 
-# Lazy load models
+# Global caches for performance
 _model = None
 _embeddings = None
+_bm25_cache = None
+_metadata_cache = None
+_documents_cache = None
 
 def _get_model():
     """Lazy load SentenceTransformer model only when needed"""
@@ -25,6 +28,15 @@ def _get_embeddings():
         from langchain_community.embeddings import HuggingFaceEmbeddings
         _embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     return _embeddings
+
+def _build_bm25_index(documents):
+    """Build BM25 index with caching"""
+    global _bm25_cache, _documents_cache
+    if _bm25_cache is None or _documents_cache != documents:
+        tokenized_docs = [tokenize(doc) for doc in documents]
+        _bm25_cache = BM25Okapi(tokenized_docs)
+        _documents_cache = documents
+    return _bm25_cache
 
 FAISS_DIR = Path("data/faiss_index")
 EMBEDDINGS_DIR = Path("data/embeddings")
@@ -59,6 +71,7 @@ def retrieve_top_chunks(query: str, index_filename: str, metadata_filename: str,
 
     documents = [item["text"] for item in metadata]
 
+    # Use cached model for faster embedding
     model = _get_model()
     query_embedding = model.encode([query]).astype("float32")
     distances, indices = index.search(query_embedding, min(10, len(documents)))
@@ -75,8 +88,8 @@ def retrieve_top_chunks(query: str, index_filename: str, metadata_filename: str,
                 "end_word": metadata[idx]["end_word"]
             })
 
-    tokenized_docs = [tokenize(doc) for doc in documents]
-    bm25 = BM25Okapi(tokenized_docs)
+    # Use cached BM25 index instead of rebuilding
+    bm25 = _build_bm25_index(documents)
     query_tokens = tokenize(query)
     bm25_scores = bm25.get_scores(query_tokens)
 

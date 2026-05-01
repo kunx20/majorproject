@@ -32,12 +32,12 @@ def ask_question(payload: AskRequest):
         )
 
     try:
-        # Retrieve relevant chunks from the knowledge base
+        # Retrieve relevant chunks from the knowledge base (reduced for faster processing)
         results = retrieve_top_chunks(
             query=payload.question,
             index_filename="standard-treatment-guidelines_chunks.index",
             metadata_filename="standard-treatment-guidelines_chunks_metadata.json",
-            top_k=3
+            top_k=2
         )
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

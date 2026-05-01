@@ -26,6 +26,16 @@ app.include_router(ingest_router, prefix="/api", tags=["Ingest"])
 app.include_router(process_router, prefix="/api", tags=["Process"])
 app.include_router(embed_router, prefix="/api", tags=["Embed"])
 
+@app.on_event("startup")
+def startup_event():
+    """Pre-load models at startup for faster first request"""
+    try:
+        from app.services.retriever import _get_model
+        _get_model()  # Pre-load embedding model
+        print("✓ Embedding model pre-loaded successfully")
+    except Exception as e:
+        print(f"✗ Failed to pre-load embedding model: {e}")
+
 @app.get("/")
 def root():
     return {

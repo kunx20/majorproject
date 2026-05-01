@@ -46,15 +46,25 @@ Provide a clear, structured answer based only on the guidelines above."""
     ]
     
     try:
+        # Configure GPU acceleration if available
+        ollama_options = {
+            "temperature": 0.2,  # Very low for medical accuracy
+            "top_p": 0.9,
+            "num_predict": 300,  # Reduced from 500 for faster response
+            "top_k": 40,  # Faster decoding
+            "repeat_penalty": 1.1,
+            "num_thread": settings.NUM_THREADS,  # Parallel CPU processing
+        }
+        
+        # Enable GPU layers if available
+        if settings.ENABLE_GPU:
+            ollama_options["num_gpu"] = settings.NUM_GPU_LAYERS
+        
         response = ollama.chat(
             model=settings.OLLAMA_MODEL,
             messages=messages,
             stream=False,
-            options={
-                "temperature": 0.2,  # Very low for medical accuracy
-                "top_p": 0.9,
-                "num_predict": 500,  # Limit response length
-            }
+            options=ollama_options
         )
         answer = response["message"]["content"].strip()
         

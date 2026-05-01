@@ -1,494 +1,665 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Clinical Guideline QA System</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clinical Guideline QA System</title>
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Font Awesome CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <style>
-        body {
-            background:
-                radial-gradient(circle at top left, rgba(59, 130, 246, 0.14), transparent 25%),
-                radial-gradient(circle at top right, rgba(168, 85, 247, 0.14), transparent 25%),
-                radial-gradient(circle at bottom center, rgba(16, 185, 129, 0.10), transparent 25%),
-                linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
-            min-height: 100vh;
-        }
+  <style>
+    :root {
+      --navy:    #080E1C;
+      --surface: #0F1829;
+      --card:    #141E33;
+      --border:  rgba(255,255,255,0.07);
+      --cyan:    #22D3EE;
+      --emerald: #10B981;
+      --violet:  #A78BFA;
+      --amber:   #FBBF24;
+      --text:    #E2EAFF;
+      --muted:   #6B7FA8;
+    }
 
-        .glass {
-            background: rgba(255, 255, 255, 0.72);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            border: 1px solid rgba(255, 255, 255, 0.65);
-        }
+    *, *::before, *::after { box-sizing: border-box; }
 
-        .card-btn {
-            transition: all 0.35s ease;
-        }
+    html { scroll-behavior: smooth; }
 
-        .card-btn:hover {
-            transform: translateY(-10px) scale(1.01);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.12);
-        }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--navy);
+      background-image:
+        radial-gradient(ellipse 80% 60% at 10% 0%, rgba(34,211,238,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 90% 10%, rgba(167,139,250,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 50% 100%, rgba(16,185,129,0.06) 0%, transparent 60%);
+      color: var(--text);
+      min-height: 100vh;
+    }
 
-        .soft-shadow {
-            box-shadow: 0 12px 30px rgba(30, 41, 59, 0.08);
-        }
+    h1, h2, h3 { font-family: 'DM Serif Display', serif; }
 
-        .answer-box {
-            animation: fadeInUp 0.5s ease;
-        }
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--navy); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
 
-        .select-wrap {
-            position: relative;
-        }
+    /* ── Glass card ── */
+    .glass {
+      background: var(--card);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
 
-        .topic-select {
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            padding-right: 3rem;
-        }
+    /* ── Gradient border accent ── */
+    .accent-border {
+      position: relative;
+    }
+    .accent-border::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, var(--cyan), var(--violet), var(--emerald));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .accent-border:hover::before { opacity: 1; }
 
-        .select-chevron {
-            position: absolute;
-            right: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            pointer-events: none;
-            font-size: 0.95rem;
-            color: #4b5563;
-        }
+    /* ── Info cards ── */
+    .info-card {
+      transition: transform 0.3s cubic-bezier(.22,.68,0,1.2), box-shadow 0.3s ease;
+      cursor: pointer;
+    }
+    .info-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 24px 48px rgba(0,0,0,0.4);
+    }
+    .info-card:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 3px;
+    }
 
-        .modal-fade {
-            animation: fadeIn 0.25s ease;
-        }
+    /* ── Status pulse ── */
+    .pulse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+      50%       { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+    }
 
-        .modal-pop {
-            animation: popIn 0.28s ease;
-        }
+    /* ── Textarea ── */
+    .qa-textarea {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text);
+      transition: border-color 0.25s, box-shadow 0.25s;
+      resize: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+    .qa-textarea::placeholder { color: var(--muted); }
+    .qa-textarea:focus {
+      outline: none;
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(34,211,238,0.12);
+    }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+    /* ── Select ── */
+    .qa-select {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text);
+      appearance: none;
+      -webkit-appearance: none;
+      font-family: 'DM Sans', sans-serif;
+      padding-right: 3rem;
+      transition: border-color 0.25s;
+      cursor: pointer;
+    }
+    .qa-select:focus {
+      outline: none;
+      border-color: var(--cyan);
+    }
+    .qa-select option { background: var(--card); color: var(--text); }
 
-        @keyframes popIn {
-            from {
-                opacity: 0;
-                transform: translateY(18px) scale(0.96);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
+    /* ── Buttons ── */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cyan), #38BDF8);
+      color: #030712;
+      font-weight: 600;
+      transition: filter 0.25s, transform 0.2s;
+    }
+    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .btn-primary:focus-visible { outline: 2px solid white; outline-offset: 3px; }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(18px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
+    .btn-ghost {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--muted);
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.10); color: var(--text); }
+    .btn-ghost:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+    /* ── Answer box ── */
+    .answer-box {
+      animation: slideUp 0.45s cubic-bezier(.22,.68,0,1.15) both;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Citation pill ── */
+    .citation-item {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-left: 3px solid var(--cyan);
+      transition: background 0.2s;
+    }
+    .citation-item:hover { background: rgba(255,255,255,0.07); }
+
+    /* ── Gradient text ── */
+    .grad-text {
+      background: linear-gradient(90deg, var(--cyan) 0%, #818CF8 50%, var(--violet) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      animation: fadeIn 0.2s ease both;
+    }
+    .modal-panel {
+      animation: popIn 0.28s cubic-bezier(.22,.68,0,1.2) both;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Icon badge ── */
+    .icon-badge {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+  </style>
 </head>
-<body class="text-gray-800">
 
-    <div class="max-w-7xl mx-auto px-6 py-10">
+<body>
 
-        <!-- Header -->
-        <div class="text-center mb-12">
-            <div class="inline-flex items-center gap-5 glass rounded-[32px] px-8 py-6 soft-shadow">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-lg">
-                    <i class="fas fa-stethoscope text-3xl"></i>
-                </div>
-                <div class="text-left">
-                    <h1 class="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                        Clinical Guideline QA System
-                    </h1>
-                    <p class="text-gray-500 text-base md:text-lg mt-2">
-                        Evidence-based question answering using guidelines, hybrid retrieval, and safety checks
-                    </p>
-                </div>
-            </div>
+  <!-- ══════════════════════════════════════════
+       TOP NAV STRIP
+  ══════════════════════════════════════════ -->
+  <header class="border-b border-white/[0.06] px-6 py-3">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="icon-badge" style="background:linear-gradient(135deg,#22D3EE,#818CF8)">
+          <i class="fas fa-stethoscope text-[#030712] text-xl"></i>
         </div>
-
-        <!-- Top cards -->
-        <div class="grid md:grid-cols-3 gap-6 mb-10">
-
-            <button id="guidelineCard" class="card-btn relative overflow-hidden glass rounded-3xl p-7 text-left soft-shadow">
-                <div class="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent opacity-80"></div>
-                <div class="relative z-10">
-                    <div class="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center mb-5">
-                        <i class="fas fa-file-medical text-2xl text-green-500"></i>
-                    </div>
-                    <h3 class="font-bold text-2xl text-gray-900 mb-3">Guideline Loaded</h3>
-                    <p class="text-green-700 font-semibold text-lg">Standard Treatment Guidelines</p>
-                    <p class="text-sm text-gray-500 mt-3">Click to view guideline details</p>
-                </div>
-            </button>
-
-            <button id="vectorCard" class="card-btn relative overflow-hidden glass rounded-3xl p-7 text-left soft-shadow">
-                <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-80"></div>
-                <div class="relative z-10">
-                    <div class="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center mb-5">
-                        <i class="fas fa-database text-2xl text-blue-500"></i>
-                    </div>
-                    <h3 class="font-bold text-2xl text-gray-900 mb-3">Vector Index</h3>
-                    <p class="text-blue-700 font-semibold text-lg">FAISS + Hybrid Search Ready</p>
-                    <p class="text-sm text-gray-500 mt-3">Click to view retrieval details</p>
-                </div>
-            </button>
-
-            <button id="safetyCard" class="card-btn relative overflow-hidden glass rounded-3xl p-7 text-left soft-shadow">
-                <div class="absolute inset-0 bg-gradient-to-br from-purple-50 to-transparent opacity-80"></div>
-                <div class="relative z-10">
-                    <div class="w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center mb-5">
-                        <i class="fas fa-shield-alt text-2xl text-purple-500"></i>
-                    </div>
-                    <h3 class="font-bold text-2xl text-gray-900 mb-3">Safety Guardrails</h3>
-                    <p class="text-purple-700 font-semibold text-lg">Emergency Detection Active</p>
-                    <p class="text-sm text-gray-500 mt-3">Click to view safety details</p>
-                </div>
-            </button>
-        </div>
-
-        <!-- Ask section -->
-        <div class="grid lg:grid-cols-3 gap-8">
-
-            <!-- Main ask area -->
-            <div class="lg:col-span-2">
-                <div class="glass rounded-3xl p-8 soft-shadow">
-                    <div class="flex items-center gap-3 mb-5">
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center">
-                            <i class="fas fa-comment-medical text-xl"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-900">Ask a Clinical Question</h2>
-                            <p class="text-gray-500">Get a guideline-based answer with relevant source context</p>
-                        </div>
-                    </div>
-
-                    <textarea
-                        id="questionInput"
-                        rows="4"
-                        placeholder="Example: What is the first-line treatment for hypertension?"
-                        class="w-full rounded-2xl border border-gray-200 bg-white/80 px-5 py-4 text-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    ></textarea>
-
-                    <div class="mt-4 select-wrap">
-                        <label for="quickQuestion" class="block text-sm font-semibold text-gray-600 mb-2">Quick question dropdown</label>
-                        <select
-                            id="quickQuestion"
-                            class="topic-select w-full rounded-2xl border border-gray-200 bg-white/80 px-5 py-3 text-base text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="">Choose a sample clinical question</option>
-                            <option value="What is the first-line treatment for hypertension?">Hypertension first-line treatment</option>
-                            <option value="What lifestyle changes are recommended for hypertension?">Lifestyle changes for hypertension</option>
-                            <option value="When should beta blockers be used?">When to use beta blockers</option>
-                            <option value="What are common contraindications for ACE inhibitors?">ACE inhibitor contraindications</option>
-                        </select>
-                        <span class="select-chevron" aria-hidden="true">▼</span>
-                    </div>
-
-                    <div class="flex flex-wrap gap-3 mt-5">
-                        <button
-                            id="askBtn"
-                            class="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-semibold shadow-lg hover:scale-105 transition"
-                        >
-                            <i class="fas fa-paper-plane mr-2"></i> Ask Question
-                        </button>
-
-                        <button
-                            id="clearBtn"
-                            class="px-7 py-3.5 rounded-2xl bg-white text-gray-700 font-semibold border border-gray-200 shadow hover:bg-gray-50 transition"
-                        >
-                            <i class="fas fa-eraser mr-2"></i> Clear
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Answer box -->
-                <div id="answerSection" class="glass rounded-3xl p-8 soft-shadow mt-8 answer-box hidden">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-12 h-12 rounded-2xl bg-green-100 flex items-center justify-center">
-                            <i class="fas fa-notes-medical text-green-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-900">Answer</h2>
-                            <p class="text-gray-500">Easy-to-understand clinical guidance</p>
-                        </div>
-                    </div>
-
-                    <div id="answerText" class="text-lg leading-8 text-gray-700"></div>
-
-                    <div class="mt-6 p-4 rounded-2xl bg-yellow-50 border border-yellow-200 text-yellow-800">
-                        <i class="fas fa-triangle-exclamation mr-2"></i>
-                        This answer is based only on uploaded clinical guidelines and is not a replacement for emergency medical care.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right panel -->
-            <div class="space-y-6">
-
-                <div class="glass rounded-3xl p-6 soft-shadow">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center">
-                            <i class="fas fa-book-medical text-indigo-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold">Source Summary</h3>
-                            <p class="text-sm text-gray-500">Current knowledge source</p>
-                        </div>
-                    </div>
-
-                    <ul class="space-y-3 text-gray-700">
-                        <li class="flex items-start gap-3">
-                            <i class="fas fa-circle-check text-green-500 mt-1"></i>
-                            <span>Standard Treatment Guidelines loaded successfully</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <i class="fas fa-circle-check text-green-500 mt-1"></i>
-                            <span>Chunks indexed in FAISS vector database</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <i class="fas fa-circle-check text-green-500 mt-1"></i>
-                            <span>Hybrid retrieval available for better answer relevance</span>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="glass rounded-3xl p-6 soft-shadow">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center">
-                            <i class="fas fa-quote-left text-blue-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold">Citations</h3>
-                            <p class="text-sm text-gray-500">Retrieved source snippets</p>
-                        </div>
-                    </div>
-
-                    <div id="citationsBox" class="space-y-4 text-gray-700">
-                        <div class="p-4 rounded-2xl bg-white/70 border border-gray-200">
-                            No citations yet. Ask a question to see source evidence.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass rounded-3xl p-6 soft-shadow">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center">
-                            <i class="fas fa-user-shield text-purple-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold">Safety Note</h3>
-                            <p class="text-sm text-gray-500">Built-in guardrails</p>
-                        </div>
-                    </div>
-
-                    <p class="text-gray-700 leading-7">
-                        The system is designed to answer only from guideline content and should refuse unsupported or emergency-only medical requests.
-                    </p>
-                </div>
-
-            </div>
-        </div>
+        <span class="font-['DM_Serif_Display'] text-xl text-white tracking-tight">ClinicalQA</span>
+      </div>
+      <div class="flex items-center gap-2 text-sm" style="color:var(--muted)">
+        <div class="pulse-dot"></div>
+        <span>System active</span>
+      </div>
     </div>
+  </header>
 
-    <!-- Modal -->
-    <div id="infoModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 modal-fade">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 relative modal-pop">
-            <button id="closeModal" class="absolute top-5 right-5 w-11 h-11 rounded-full bg-gray-100 hover:bg-red-100 text-gray-600 hover:text-red-500 transition">
-                <i class="fas fa-times"></i>
-            </button>
+  <!-- ══════════════════════════════════════════
+       HERO HEADER
+  ══════════════════════════════════════════ -->
+  <div class="max-w-7xl mx-auto px-6 pt-14 pb-10 text-center">
+    <p class="text-xs font-semibold tracking-[0.2em] uppercase mb-4" style="color:var(--cyan)">Evidence-Based Clinical Intelligence</p>
+    <h1 class="text-4xl md:text-6xl font-normal mb-4 leading-tight">
+      <span class="text-white">Clinical Guideline</span><br>
+      <span class="grad-text">QA System</span>
+    </h1>
+    <p class="text-base md:text-lg max-w-xl mx-auto leading-relaxed" style="color:var(--muted)">
+      Hybrid retrieval · Safety guardrails · Evidence-grounded answers
+    </p>
+  </div>
 
-            <div id="modalIcon" class="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"></div>
-            <h2 id="modalTitle" class="text-3xl font-bold text-gray-900 mb-4"></h2>
-            <div id="modalContent" class="text-gray-700 leading-8 text-lg"></div>
+  <!-- ══════════════════════════════════════════
+       INFO CARDS
+  ══════════════════════════════════════════ -->
+  <div class="max-w-7xl mx-auto px-6 mb-10">
+    <div class="grid md:grid-cols-3 gap-5">
+
+      <!-- Guideline -->
+      <button id="guidelineCard"
+        class="info-card accent-border glass rounded-2xl p-6 text-left"
+        aria-haspopup="dialog" aria-label="View guideline details">
+        <div class="icon-badge mb-5" style="background:rgba(16,185,129,0.12)">
+          <i class="fas fa-file-medical text-xl" style="color:var(--emerald)"></i>
         </div>
+        <h3 class="text-lg font-semibold text-white mb-1">Guideline Loaded</h3>
+        <p class="text-sm mb-3" style="color:var(--emerald)">Standard Treatment Guidelines</p>
+        <p class="text-xs" style="color:var(--muted)">Click to view details →</p>
+      </button>
+
+      <!-- Vector Index -->
+      <button id="vectorCard"
+        class="info-card accent-border glass rounded-2xl p-6 text-left"
+        aria-haspopup="dialog" aria-label="View retrieval details">
+        <div class="icon-badge mb-5" style="background:rgba(34,211,238,0.10)">
+          <i class="fas fa-database text-xl" style="color:var(--cyan)"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-1">Vector Index</h3>
+        <p class="text-sm mb-3" style="color:var(--cyan)">FAISS + Hybrid Search Ready</p>
+        <p class="text-xs" style="color:var(--muted)">Click to view details →</p>
+      </button>
+
+      <!-- Safety -->
+      <button id="safetyCard"
+        class="info-card accent-border glass rounded-2xl p-6 text-left"
+        aria-haspopup="dialog" aria-label="View safety details">
+        <div class="icon-badge mb-5" style="background:rgba(167,139,250,0.12)">
+          <i class="fas fa-shield-alt text-xl" style="color:var(--violet)"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-white mb-1">Safety Guardrails</h3>
+        <p class="text-sm mb-3" style="color:var(--violet)">Emergency Detection Active</p>
+        <p class="text-xs" style="color:var(--muted)">Click to view details →</p>
+      </button>
+
     </div>
+  </div>
 
-    <script>
-        const modal = document.getElementById('infoModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalContent = document.getElementById('modalContent');
-        const modalIcon = document.getElementById('modalIcon');
+  <!-- ══════════════════════════════════════════
+       MAIN GRID — Q&A + SIDEBAR
+  ══════════════════════════════════════════ -->
+  <div class="max-w-7xl mx-auto px-6 pb-16">
+    <div class="grid lg:grid-cols-3 gap-6">
 
-        const guidelineCard = document.getElementById('guidelineCard');
-        const vectorCard = document.getElementById('vectorCard');
-        const safetyCard = document.getElementById('safetyCard');
-        const closeModalBtn = document.getElementById('closeModal');
+      <!-- ── Left / Main Q&A ── -->
+      <div class="lg:col-span-2 flex flex-col gap-6">
 
-        function openModal(title, content, iconWrapperClass, iconHTML) {
-            modalTitle.textContent = title;
-            modalContent.innerHTML = content;
-            modalIcon.className = `w-16 h-16 rounded-2xl flex items-center justify-center mb-5 ${iconWrapperClass}`;
-            modalIcon.innerHTML = iconHTML;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+        <!-- Ask panel -->
+        <div class="glass rounded-2xl p-7">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="icon-badge" style="background:rgba(34,211,238,0.10)">
+              <i class="fas fa-comment-medical" style="color:var(--cyan)"></i>
+            </div>
+            <div>
+              <h2 class="text-2xl text-white">Ask a Clinical Question</h2>
+              <p class="text-sm" style="color:var(--muted)">Get a guideline-based answer with source evidence</p>
+            </div>
+          </div>
+
+          <textarea
+            id="questionInput"
+            rows="4"
+            placeholder="e.g. What is the first-line treatment for hypertension?"
+            class="qa-textarea w-full rounded-xl px-5 py-4"
+            aria-label="Clinical question input"
+          ></textarea>
+
+          <!-- Quick questions -->
+          <div class="mt-4 relative">
+            <label for="quickQuestion" class="block text-xs font-semibold tracking-wide uppercase mb-2" style="color:var(--muted)">
+              Quick sample questions
+            </label>
+            <div class="relative">
+              <select id="quickQuestion" class="qa-select w-full rounded-xl px-5 py-3 text-sm">
+                <option value="">Choose a sample clinical question…</option>
+                <option value="What is the first-line treatment for hypertension?">Hypertension first-line treatment</option>
+                <option value="What lifestyle changes are recommended for hypertension?">Lifestyle changes for hypertension</option>
+                <option value="When should beta blockers be used?">When to use beta blockers</option>
+                <option value="What are common contraindications for ACE inhibitors?">ACE inhibitor contraindications</option>
+              </select>
+              <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs" style="color:var(--muted)">▼</span>
+            </div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex flex-wrap gap-3 mt-5">
+            <button id="askBtn" class="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl text-sm">
+              <i class="fas fa-paper-plane"></i> Ask Question
+            </button>
+            <button id="clearBtn" class="btn-ghost flex items-center gap-2 px-6 py-3 rounded-xl text-sm">
+              <i class="fas fa-eraser"></i> Clear
+            </button>
+          </div>
+
+          <p class="text-xs mt-3" style="color:var(--muted)">
+            <i class="fas fa-keyboard mr-1"></i> Tip: press <kbd class="px-1 py-0.5 rounded text-xs border border-white/10 bg-white/5">Ctrl + Enter</kbd> to submit
+          </p>
+        </div>
+
+        <!-- Answer box (hidden until response) -->
+        <div id="answerSection" class="answer-box glass rounded-2xl p-7 hidden" role="region" aria-live="polite" aria-label="Answer">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="icon-badge" style="background:rgba(16,185,129,0.12)">
+              <i class="fas fa-notes-medical" style="color:var(--emerald)"></i>
+            </div>
+            <div>
+              <h2 class="text-2xl text-white">Answer</h2>
+              <p class="text-sm" style="color:var(--muted)">Guideline-based clinical guidance</p>
+            </div>
+          </div>
+
+          <div id="answerText" class="text-base leading-8" style="color:var(--text)"></div>
+
+          <div class="mt-6 flex items-start gap-3 rounded-xl px-5 py-4"
+            style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2)">
+            <i class="fas fa-triangle-exclamation mt-1 text-sm" style="color:var(--amber)"></i>
+            <p class="text-sm leading-6" style="color:rgba(251,191,36,0.9)">
+              This answer is based only on uploaded clinical guidelines and is not a replacement for professional medical judgement or emergency care.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Right sidebar ── -->
+      <div class="flex flex-col gap-5">
+
+        <!-- Source summary -->
+        <div class="glass rounded-2xl p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="icon-badge" style="background:rgba(129,140,248,0.12)">
+              <i class="fas fa-book-medical text-sm" style="color:#818CF8"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold text-white">Source Summary</h3>
+              <p class="text-xs" style="color:var(--muted)">Current knowledge base</p>
+            </div>
+          </div>
+          <ul class="space-y-3 text-sm" style="color:var(--muted)">
+            <li class="flex items-start gap-3">
+              <i class="fas fa-circle-check mt-0.5 text-xs" style="color:var(--emerald)"></i>
+              Standard Treatment Guidelines loaded
+            </li>
+            <li class="flex items-start gap-3">
+              <i class="fas fa-circle-check mt-0.5 text-xs" style="color:var(--emerald)"></i>
+              Chunks indexed in FAISS vector store
+            </li>
+            <li class="flex items-start gap-3">
+              <i class="fas fa-circle-check mt-0.5 text-xs" style="color:var(--emerald)"></i>
+              Hybrid retrieval + BM25 reranking active
+            </li>
+          </ul>
+        </div>
+
+        <!-- Citations -->
+        <div class="glass rounded-2xl p-6 flex-1">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="icon-badge" style="background:rgba(34,211,238,0.10)">
+              <i class="fas fa-quote-left text-sm" style="color:var(--cyan)"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold text-white">Citations</h3>
+              <p class="text-xs" style="color:var(--muted)">Retrieved source snippets</p>
+            </div>
+          </div>
+          <div id="citationsBox" class="space-y-3 text-sm">
+            <div class="citation-item rounded-xl px-4 py-3 text-sm" style="color:var(--muted);border-left-color:rgba(255,255,255,0.1)">
+              No citations yet. Ask a question to see source evidence.
+            </div>
+          </div>
+        </div>
+
+        <!-- Safety note -->
+        <div class="glass rounded-2xl p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="icon-badge" style="background:rgba(167,139,250,0.12)">
+              <i class="fas fa-user-shield text-sm" style="color:var(--violet)"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold text-white">Safety Note</h3>
+              <p class="text-xs" style="color:var(--muted)">Built-in guardrails</p>
+            </div>
+          </div>
+          <p class="text-sm leading-7" style="color:var(--muted)">
+            The system answers only from guideline content and will refuse emergency-only or unsupported medical requests.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       MODAL
+  ══════════════════════════════════════════ -->
+  <div id="infoModal"
+    class="modal-overlay fixed inset-0 hidden items-center justify-center z-50 p-4"
+    style="background:rgba(8,14,28,0.8);backdrop-filter:blur(8px)"
+    role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+
+    <div class="modal-panel glass rounded-2xl max-w-lg w-full p-8 relative"
+      style="border:1px solid rgba(255,255,255,0.12)">
+
+      <button id="closeModal"
+        class="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center transition"
+        style="background:rgba(255,255,255,0.06);color:var(--muted)"
+        aria-label="Close dialog"
+        onmouseover="this.style.background='rgba(239,68,68,0.15)';this.style.color='#F87171'"
+        onmouseleave="this.style.background='rgba(255,255,255,0.06)';this.style.color='var(--muted)'">
+        <i class="fas fa-times text-sm"></i>
+      </button>
+
+      <div id="modalIcon" class="icon-badge mb-5"></div>
+      <h2 id="modalTitle" class="text-2xl text-white mb-4"></h2>
+      <div id="modalContent" class="text-sm leading-8 space-y-2" style="color:var(--muted)"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       SCRIPTS
+  ══════════════════════════════════════════ -->
+  <script>
+    /* ── Modal logic ── */
+    const modal       = document.getElementById('infoModal');
+    const modalTitle  = document.getElementById('modalTitle');
+    const modalContent= document.getElementById('modalContent');
+    const modalIcon   = document.getElementById('modalIcon');
+    let lastFocused   = null;
+
+    function openModal(title, content, iconBg, iconColor, iconClass) {
+      lastFocused = document.activeElement;
+      modalTitle.textContent = title;
+      modalContent.innerHTML = content;
+      modalIcon.style.background = iconBg;
+      modalIcon.innerHTML = `<i class="${iconClass} text-xl" style="color:${iconColor}"></i>`;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('closeModal').focus();
+      document.addEventListener('keydown', trapFocus);
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.removeEventListener('keydown', trapFocus);
+      if (lastFocused) lastFocused.focus();
+    }
+
+    function trapFocus(e) {
+      if (e.key === 'Escape') { closeModal(); return; }
+      if (e.key !== 'Tab') return;
+      const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (e.shiftKey) { if (document.activeElement === first) { last.focus(); e.preventDefault(); } }
+      else { if (document.activeElement === last) { first.focus(); e.preventDefault(); } }
+    }
+
+    const modalData = {
+      guideline: {
+        title: 'Guideline Loaded',
+        content: `
+          <p><strong class="text-white">Document:</strong> Standard Treatment Guidelines</p>
+          <p><strong class="text-white">Status:</strong> Uploaded, cleaned, chunked, and indexed.</p>
+          <p><strong class="text-white">Usage:</strong> Acts as the primary knowledge base for answering clinical questions.</p>
+          <p><strong class="text-white">Pipeline:</strong> PDF → Text Extraction → Chunking → Embeddings → FAISS Index.</p>`,
+        iconBg: 'rgba(16,185,129,0.12)', iconColor: '#10B981', iconClass: 'fas fa-file-medical'
+      },
+      vector: {
+        title: 'Vector Index',
+        content: `
+          <p><strong class="text-white">Vector Store:</strong> FAISS</p>
+          <p><strong class="text-white">Search Type:</strong> Hybrid retrieval with semantic search and BM25-style reranking.</p>
+          <p><strong class="text-white">Purpose:</strong> Retrieves the most relevant guideline chunks for each question.</p>
+          <p><strong class="text-white">Benefit:</strong> Improves relevance and reduces hallucinated answers.</p>`,
+        iconBg: 'rgba(34,211,238,0.10)', iconColor: '#22D3EE', iconClass: 'fas fa-database'
+      },
+      safety: {
+        title: 'Safety Guardrails',
+        content: `
+          <p><strong class="text-white">Status:</strong> Active</p>
+          <p><strong class="text-white">Checks:</strong> Emergency prompts, unsupported diagnosis requests, and unsafe medical queries.</p>
+          <p><strong class="text-white">Policy:</strong> Answers only from uploaded guideline evidence.</p>
+          <p><strong class="text-white">Goal:</strong> Keep the assistant safe, scoped, and evidence-grounded.</p>`,
+        iconBg: 'rgba(167,139,250,0.12)', iconColor: '#A78BFA', iconClass: 'fas fa-shield-alt'
+      }
+    };
+
+    document.getElementById('guidelineCard').addEventListener('click', () => {
+      const d = modalData.guideline;
+      openModal(d.title, d.content, d.iconBg, d.iconColor, d.iconClass);
+    });
+    document.getElementById('vectorCard').addEventListener('click', () => {
+      const d = modalData.vector;
+      openModal(d.title, d.content, d.iconBg, d.iconColor, d.iconClass);
+    });
+    document.getElementById('safetyCard').addEventListener('click', () => {
+      const d = modalData.safety;
+      openModal(d.title, d.content, d.iconBg, d.iconColor, d.iconClass);
+    });
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+    /* ── Q&A logic ── */
+    const askBtn        = document.getElementById('askBtn');
+    const clearBtn      = document.getElementById('clearBtn');
+    const questionInput = document.getElementById('questionInput');
+    const quickQuestion = document.getElementById('quickQuestion');
+    const answerSection = document.getElementById('answerSection');
+    const answerText    = document.getElementById('answerText');
+    const citationsBox  = document.getElementById('citationsBox');
+
+    quickQuestion.addEventListener('change', () => {
+      if (quickQuestion.value) questionInput.value = quickQuestion.value;
+    });
+
+    // Ctrl + Enter shortcut
+    questionInput.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') askBtn.click();
+    });
+
+    async function doAsk() {
+      const question = questionInput.value.trim();
+      if (!question) {
+        questionInput.focus();
+        questionInput.style.borderColor = '#F87171';
+        setTimeout(() => questionInput.style.borderColor = '', 1200);
+        return;
+      }
+
+      askBtn.disabled = true;
+      askBtn.innerHTML = '<span class="spinner"></span><span class="ml-2">Processing…</span>';
+
+      try {
+        const response = await fetch('http://localhost:8000/api/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question })
+        });
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.detail || 'Failed to get answer');
         }
 
-        function closeModal() {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+        const data = await response.json();
+
+        answerSection.classList.remove('hidden');
+        answerText.innerHTML = `<p>${data.answer}</p>`;
+
+        if (data.citations && data.citations.length > 0) {
+          citationsBox.innerHTML = data.citations.map((c, i) => `
+            <div class="citation-item rounded-xl px-4 py-3">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                  style="background:rgba(34,211,238,0.12);color:var(--cyan)">§${i + 1}</span>
+                <span class="text-xs font-semibold text-white">${c.source}</span>
+              </div>
+              <p class="text-xs mb-1" style="color:var(--muted)"><strong style="color:rgba(255,255,255,0.5)">Section:</strong> ${c.section}</p>
+              <p class="text-xs italic" style="color:var(--muted)">"${c.text}"</p>
+            </div>
+          `).join('');
+        } else {
+          citationsBox.innerHTML = `
+            <div class="citation-item rounded-xl px-4 py-3 text-sm" style="color:var(--muted);border-left-color:rgba(255,255,255,0.08)">
+              No citations available for this answer.
+            </div>`;
         }
 
-        guidelineCard.addEventListener('click', () => {
-            openModal(
-                'Guideline Loaded',
-                `
-                <p><strong>Document:</strong> Standard Treatment Guidelines</p>
-                <p><strong>Status:</strong> Uploaded, cleaned, chunked, and indexed successfully.</p>
-                <p><strong>Usage:</strong> This guideline acts as the knowledge base for answering clinical questions.</p>
-                <p><strong>Flow:</strong> PDF/Document → Text Extraction → Chunking → Embeddings → Retrieval.</p>
-                `,
-                'bg-green-100 text-green-600',
-                '<i class="fas fa-file-medical text-2xl"></i>'
-            );
-        });
+        answerSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-        vectorCard.addEventListener('click', () => {
-            openModal(
-                'Vector Index',
-                `
-                <p><strong>Vector Store:</strong> FAISS</p>
-                <p><strong>Search Type:</strong> Hybrid retrieval with semantic search and BM25-style reranking.</p>
-                <p><strong>Purpose:</strong> Retrieves the most relevant guideline chunks for the user question.</p>
-                <p><strong>Benefit:</strong> Improves relevance and reduces weak answers.</p>
-                `,
-                'bg-blue-100 text-blue-600',
-                '<i class="fas fa-database text-2xl"></i>'
-            );
-        });
+      } catch (error) {
+        answerSection.classList.remove('hidden');
+        answerText.innerHTML = `
+          <div class="flex items-start gap-3 rounded-xl px-5 py-4"
+            style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2)">
+            <i class="fas fa-exclamation-circle mt-0.5" style="color:#F87171"></i>
+            <div>
+              <p class="text-sm font-semibold" style="color:#F87171">Connection Error</p>
+              <p class="text-sm mt-1" style="color:var(--muted)">${error.message}</p>
+              <p class="text-xs mt-2" style="color:var(--muted)">Ensure the FastAPI server is running at <code class="px-1 py-0.5 rounded text-xs" style="background:rgba(255,255,255,0.06)">localhost:8000</code></p>
+            </div>
+          </div>`;
+      } finally {
+        askBtn.disabled = false;
+        askBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Ask Question';
+      }
+    }
 
-        safetyCard.addEventListener('click', () => {
-            openModal(
-                'Safety Guardrails',
-                `
-                <p><strong>Status:</strong> Active</p>
-                <p><strong>Checks:</strong> Emergency prompts, unsupported diagnosis requests, and unsafe medical usage.</p>
-                <p><strong>Response Policy:</strong> The system should answer only from uploaded guideline evidence.</p>
-                <p><strong>Goal:</strong> Keep the assistant safe, limited, and evidence-grounded.</p>
-                `,
-                'bg-purple-100 text-purple-600',
-                '<i class="fas fa-shield-alt text-2xl"></i>'
-            );
-        });
+    askBtn.addEventListener('click', doAsk);
 
-        closeModalBtn.addEventListener('click', closeModal);
-
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
-            }
-        });
-
-        // Ask button behavior with API integration
-        const askBtn = document.getElementById('askBtn');
-        const clearBtn = document.getElementById('clearBtn');
-        const questionInput = document.getElementById('questionInput');
-        const quickQuestion = document.getElementById('quickQuestion');
-        const answerSection = document.getElementById('answerSection');
-        const answerText = document.getElementById('answerText');
-        const citationsBox = document.getElementById('citationsBox');
-
-        quickQuestion.addEventListener('change', () => {
-            if (quickQuestion.value) {
-                questionInput.value = quickQuestion.value;
-            }
-        });
-
-        askBtn.addEventListener('click', async () => {
-            const question = questionInput.value.trim();
-
-            if (!question) {
-                alert('Please enter a clinical question.');
-                return;
-            }
-
-            // Show loading state
-            askBtn.disabled = true;
-            askBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
-
-            try {
-                const response = await fetch('http://localhost:8000/api/ask', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ question: question })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.detail || 'Failed to get answer');
-                }
-
-                const data = await response.json();
-
-                // Display answer
-                answerSection.classList.remove('hidden');
-                answerText.innerHTML = `<p>${data.answer}</p>`;
-
-                // Display citations
-                if (data.citations && data.citations.length > 0) {
-                    citationsBox.innerHTML = data.citations.map((citation, idx) => `
-                        <div class="p-4 rounded-2xl bg-white/80 border border-gray-200">
-                            <p class="font-semibold text-gray-900 mb-1">Source ${idx + 1}: ${citation.source}</p>
-                            <p class="text-sm text-gray-600 mb-2"><strong>Section:</strong> ${citation.section}</p>
-                            <p class="text-sm text-gray-700">"${citation.text}"</p>
-                        </div>
-                    `).join('');
-                } else {
-                    citationsBox.innerHTML = `
-                        <div class="p-4 rounded-2xl bg-white/70 border border-gray-200">
-                            No citations available for this answer.
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                answerSection.classList.remove('hidden');
-                answerText.innerHTML = `
-                    <div class="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800">
-                        <i class="fas fa-exclamation-circle mr-2"></i>
-                        <strong>Error:</strong> ${error.message}
-                    </div>                        # Terminal 1: Start Ollama service
-                    ollama serve
-                    
-                    # Terminal 2: Start your FastAPI app
-                    cd c:\Users\HP\Desktop\clinical_guideline_QA
-                    venv\Scripts\activate
-                    uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-                `;
-            } finally {
-                askBtn.disabled = false;
-                askBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Ask Question';
-            }
-        });
-
-        clearBtn.addEventListener('click', () => {
-            questionInput.value = '';
-            quickQuestion.value = '';
-            answerSection.classList.add('hidden');
-            citationsBox.innerHTML = `
-                <div class="p-4 rounded-2xl bg-white/70 border border-gray-200">
-                    No citations yet. Ask a question to see source evidence.
-                </div>
-            `;
-        });
-    </script>
+    clearBtn.addEventListener('click', () => {
+      questionInput.value = '';
+      quickQuestion.value = '';
+      answerSection.classList.add('hidden');
+      citationsBox.innerHTML = `
+        <div class="citation-item rounded-xl px-4 py-3 text-sm" style="color:var(--muted);border-left-color:rgba(255,255,255,0.08)">
+          No citations yet. Ask a question to see source evidence.
+        </div>`;
+    });
+  </script>
 </body>
 </html>
