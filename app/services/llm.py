@@ -29,31 +29,38 @@ def generate_answer_with_ollama_chat(question: str, context: str) -> str:
         # Fallback: Use simple context extraction
         return generate_answer_fallback(question, context)
     
-    # Optimized medical prompt for high-quality responses
-    system_prompt = """You are an expert medical information assistant specializing in clinical guidelines.
+    # Plain-language prompt for non-doctor users
+    system_prompt = """You are a helpful health information assistant.
 
-Your role is to:
-1. Answer ONLY based on the provided clinical guidelines
-2. Provide clear, accurate, and evidence-based information
-3. Use medical terminology appropriately (don't over-simplify)
-4. Format answers in a structured, easy-to-read manner
-5. If information is insufficient, clearly state what's missing
+Your job is to:
+1. Answer using only the provided clinical guidelines
+2. Write in very simple, everyday English
+3. Explain medical terms in plain words
+4. Use short paragraphs and clear bullet points where helpful
+5. Say when the information is limited or missing
+6. Avoid giving personal medical advice
 
-Never:
-- Invent or hallucinate medical information
-- Provide personal medical advice
-- Replace professional medical consultation
-- Include information not in the guidelines"""
+Important:
+- Keep the answer easy for a non-doctor to understand
+- Do not use too much technical language
+- Do not invent information
+- Do not replace a doctor or healthcare professional
+- Keep the answer practical and readable"""
     
-    user_prompt = f"""Based on the clinical guidelines provided below, answer this question:
+    user_prompt = f"""Please answer this question in simple, plain language for a general patient.
 
 QUESTION: {question}
 
 CLINICAL GUIDELINES:
 {context}
 
-ANSWER:
-Provide a clear, structured answer based only on the guidelines above."""
+Please:
+- start with a short, clear answer
+- explain key terms in simple words
+- use easy bullet points if helpful
+- mention if the guideline is limited or unclear
+- end with a gentle note that this is general information, not personal medical advice
+"""
     
     messages = [
         {"role": "system", "content": system_prompt},
@@ -94,11 +101,12 @@ Provide a clear, structured answer based only on the guidelines above."""
 
 def generate_answer_fallback(question: str, context: str) -> str:
     """Fallback answer generation when Ollama is unavailable"""
-    # Clean up context and provide as-is with slight formatting
     answer = context.strip()
     if len(answer) > 500:
         answer = answer[:500] + "..."
-    return answer
+
+    simple_intro = "Here is the main point in simple language:\n\n"
+    return simple_intro + answer + "\n\nThis is general information, not personal medical advice."
 
 
 def clean_response(text: str) -> str:
@@ -106,11 +114,57 @@ def clean_response(text: str) -> str:
     # Remove excessive whitespace
     lines = [line.strip() for line in text.split('\n') if line.strip()]
     text = '\n'.join(lines)
-    
+
     # Remove markdown formatting if present
     text = text.replace('**', '').replace('__', '').replace('`', '')
-    
-    # Clean up common artifacts
-    text = text.replace('ANSWER:', '').replace('Answer:', '').strip()
-    
+
+    # Remove prompt/instruction artifacts from model output
+    text = text.replace('Sure! Here\'s an example of how to answer this question using plain, simple language for a general patient:', '')
+    text = text.replace('Sure! Here\'s an example of how to answer the question using simple, plain language for a general patient:', '')
+    text = text.replace('What is the recommended treatment?', '')
+    text = text.replace('CLINICAL GUIDELINES:', '').replace('CLINICAL GUIIDELINES:', '')
+    text = text.replace('QUESTION:', '')
+    text = text.replace('Please:', '')
+    text = text.replace('RECOMMENDED TREATMENT:', '')
+    text = text.replace('Use clinical guidance only.', '')
+
+    lines = [line.strip() for line in text.split('\n') if line.strip()]
+    cleaned_lines = []
+    blocked_prefixes = (
+        'start with a short',
+        'use simple',
+        'use easy bullet points',
+        'end with a gentle note',
+        'please:',
+        'here\'s an example',
+        'question:',
+        'clinical guide',
+        'what is the recommended treatment',
+        '- start with',
+        '- use simple',
+        '- use easy',
+        '- end with'
+    )
+
+    for line in lines:
+        low = line.lower()
+        if low.startswith(blocked_prefixes):
+            continue
+        if low in {'sure!', 'sure! here\'s an example of how to answer this question using plain, simple language for a general patient:', 'sure! here\'s an example of how to answer the question using simple, plain language for a general patient:', 'use clinical guidance only.', 'recommended treatment:'}:
+            continue
+        if 'here\'s an example' in low or 'use clinical guidance only' in low or 'recommended treatment' in low:
+            continue
+        cleaned_lines.append(line)
+
+    text = '\n'.join(cleaned_lines).strip()
+
+    if not text:
+        return "Here is the main point in simple language:\n\nThis guideline does not provide enough detail for a personal medical recommendation. This is general information, not personal medical advice."
+
+    if not text.lower().startswith(('here is', 'in simple', 'short answer', 'the main point')):
+        text = "Here is the main point in simple language:\n\n" + text
+
+    if "not personal medical advice" not in text.lower():
+        text += "\n\nThis is general information, not personal medical advice."
+
     return text
