@@ -7,6 +7,8 @@ from app.services.llm import generate_answer_with_ollama_chat
 
 router = APIRouter()
 
+NO_RELEVANT_PREFIX = "I could not find relevant information"
+
 @router.post("/ask", response_model=AskResponse)
 def ask_question(payload: AskRequest):
     """
@@ -52,6 +54,14 @@ def ask_question(payload: AskRequest):
         # Generate answer using LLM
         context = "\n\n".join([item["text"] for item in results[:3]])
         answer = generate_answer_with_ollama_chat(payload.question, context)
+
+        if answer.strip().startswith(NO_RELEVANT_PREFIX):
+            return AskResponse(
+                question=payload.question,
+                answer=answer + "\n\n" + get_safety_message(),
+                citations=[],
+                status="no_result",
+            )
         
         # Add disclaimer
         answer += "\n\n" + get_safety_message()

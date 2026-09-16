@@ -6,6 +6,7 @@ import faiss
 import numpy as np
 from rank_bm25 import BM25Okapi
 from langchain_community.vectorstores import FAISS as LangChainFAISS
+from app.core.paths import data_path
 
 # Global caches for performance
 _model = None
@@ -65,8 +66,8 @@ def _build_bm25_index(documents):
         _documents_cache = documents
     return _bm25_cache
 
-FAISS_DIR = Path("data/faiss_index")
-EMBEDDINGS_DIR = Path("data/embeddings")
+FAISS_DIR = data_path("faiss_index")
+EMBEDDINGS_DIR = data_path("embeddings")
 
 def tokenize(text: str):
     return re.findall(r"\b\w+\b", text.lower())
