@@ -144,7 +144,7 @@ curl http://localhost:11434/api/tags
 ### Start the API Server
 
 ```bash
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
 Access the interactive API docs at: `http://localhost:8001/docs`
@@ -159,7 +159,20 @@ All 19 tests passing ✅
 
 ### Access the Web Interface
 
-Open `frontend/index.html` in your browser for the interactive Q&A interface.
+Open the mobile-friendly UI at `http://localhost:8001/ui` on the same machine.
+
+To test from Android or iPhone on the same Wi-Fi network, open `http://<your-computer-ip>:8001/ui` in the mobile browser.
+
+If you want to use the Streamlit UI instead, set `API_BASE_URL` to the backend address before running Streamlit.
+
+Example:
+
+```bash
+set API_BASE_URL=http://<your-computer-ip>:8001
+streamlit run streamlit_app.py
+```
+
+For a true native Android/iOS app, this backend still needs a separate mobile front end such as Flutter or React Native.
 
 ## API Endpoints
 

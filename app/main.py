@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from pathlib import Path
 from app.core.config import settings
 from app.api.health import router as health_router
 from app.api.ask import router as ask_router
@@ -26,6 +28,8 @@ app.include_router(ingest_router, prefix="/api", tags=["Ingest"])
 app.include_router(process_router, prefix="/api", tags=["Process"])
 app.include_router(embed_router, prefix="/api", tags=["Embed"])
 
+FRONTEND_INDEX = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
+
 @app.on_event("startup")
 def startup_event():
     """Pre-load models at startup for faster first request"""
@@ -43,3 +47,8 @@ def root():
         "version": settings.APP_VERSION,
         "message": "Welcome to the Clinical Guideline QA System API"
     }
+
+
+@app.get("/ui")
+def ui():
+    return FileResponse(FRONTEND_INDEX)

@@ -70,51 +70,69 @@ def retrieve_top_chunks(query: str, index_filename: str, metadata_filename: str,
         metadata = json.load(f)
 
     documents = [item["text"] for item in metadata]
-
-    # Use cached model for faster embedding
-    model = _get_model()
-    query_embedding = model.encode([query]).astype("float32")
-    distances, indices = index.search(query_embedding, min(10, len(documents)))
-
-    semantic_candidates = []
-    for rank, idx in enumerate(indices[0]):
-        if idx < len(metadata):
-            semantic_candidates.append({
-                "idx": int(idx),
-                "distance": float(distances[0][rank]),
-                "text": metadata[idx]["text"],
-                "chunk_id": metadata[idx]["chunk_id"],
-                "start_word": metadata[idx]["start_word"],
-                "end_word": metadata[idx]["end_word"]
-            })
-
-    # Use cached BM25 index instead of rebuilding
     bm25 = _build_bm25_index(documents)
     query_tokens = tokenize(query)
     bm25_scores = bm25.get_scores(query_tokens)
 
-    semantic_distances = [item["distance"] for item in semantic_candidates]
-    semantic_similarity = 1 / (1 + np.array(semantic_distances, dtype="float32"))
-    semantic_norm = normalize_scores(semantic_similarity)
-
-    bm25_candidate_scores = [bm25_scores[item["idx"]] for item in semantic_candidates]
-    bm25_norm = normalize_scores(bm25_candidate_scores)
-
     results = []
-    for i, item in enumerate(semantic_candidates):
-        hybrid_score = 0.7 * float(semantic_norm[i]) + 0.3 * float(bm25_norm[i])
+    try:
+        model = _get_model()
+        query_embedding = model.encode([query]).astype("float32")
+        distances, indices = index.search(query_embedding, min(10, len(documents)))
 
-        results.append({
-            "rank": 0,
-            "chunk_id": item["chunk_id"],
-            "text": item["text"],
-            "start_word": item["start_word"],
-            "end_word": item["end_word"],
-            "semantic_score": float(semantic_norm[i]),
-            "keyword_score": float(bm25_norm[i]),
-            "hybrid_score": hybrid_score,
-            "score": hybrid_score
-        })
+        semantic_candidates = []
+        for rank, idx in enumerate(indices[0]):
+            if idx < len(metadata):
+                semantic_candidates.append({
+                    "idx": int(idx),
+                    "distance": float(distances[0][rank]),
+                    "text": metadata[idx]["text"],
+                    "chunk_id": metadata[idx]["chunk_id"],
+                    "start_word": metadata[idx]["start_word"],
+                    "end_word": metadata[idx]["end_word"]
+                })
+
+        semantic_distances = [item["distance"] for item in semantic_candidates]
+        semantic_similarity = 1 / (1 + np.array(semantic_distances, dtype="float32"))
+        semantic_norm = normalize_scores(semantic_similarity)
+
+        bm25_candidate_scores = [bm25_scores[item["idx"]] for item in semantic_candidates]
+        bm25_norm = normalize_scores(bm25_candidate_scores)
+
+        for i, item in enumerate(semantic_candidates):
+            hybrid_score = 0.7 * float(semantic_norm[i]) + 0.3 * float(bm25_norm[i])
+
+            results.append({
+                "rank": 0,
+                "chunk_id": item["chunk_id"],
+                "text": item["text"],
+                "start_word": item["start_word"],
+                "end_word": item["end_word"],
+                "semantic_score": float(semantic_norm[i]),
+                "keyword_score": float(bm25_norm[i]),
+                "hybrid_score": hybrid_score,
+                "score": hybrid_score
+            })
+    except Exception as exc:
+        print(f"✗ Warning: semantic retrieval unavailable, using BM25-only fallback: {exc}")
+        ranked_indices = np.argsort(bm25_scores)[::-1][:top_k]
+
+        for idx in ranked_indices:
+            if idx >= len(metadata):
+                continue
+            keyword_score = float(bm25_scores[idx])
+            item = metadata[idx]
+            results.append({
+                "rank": 0,
+                "chunk_id": item["chunk_id"],
+                "text": item["text"],
+                "start_word": item["start_word"],
+                "end_word": item["end_word"],
+                "semantic_score": 0.0,
+                "keyword_score": keyword_score,
+                "hybrid_score": keyword_score,
+                "score": keyword_score
+            })
 
     results.sort(key=lambda x: x["hybrid_score"], reverse=True)
 
