@@ -15,6 +15,17 @@ _bm25_cache = None
 _metadata_cache = None
 _documents_cache = None
 
+RETRIEVAL_STOPWORDS = {
+    "what", "when", "where", "why", "how", "is", "are", "the", "a", "an",
+    "for", "with", "without", "should", "can", "could", "would", "do", "does",
+    "did", "first", "line", "treatment", "question", "answer", "main", "point",
+    "guide", "guidelines", "general", "medical", "information", "patient", "health",
+    "about", "this", "that", "there", "these", "those", "more", "most", "into",
+    "from", "of", "on", "in", "to", "be", "it", "as", "or", "and", "not", "used",
+    "provide", "provided", "signs", "symptoms", "common", "related", "condition",
+    "conditions",
+}
+
 
 class _FallbackSentenceTransformer:
     """Deterministic fallback for environments where sentence-transformers cannot be imported."""
@@ -70,7 +81,11 @@ FAISS_DIR = data_path("faiss_index")
 EMBEDDINGS_DIR = data_path("embeddings")
 
 def tokenize(text: str):
-    return re.findall(r"\b\w+\b", text.lower())
+    return [
+        token
+        for token in re.findall(r"\b\w+\b", text.lower())
+        if token not in RETRIEVAL_STOPWORDS
+    ]
 
 def normalize_scores(scores):
     scores = np.array(scores, dtype="float32")
@@ -100,6 +115,7 @@ def retrieve_top_chunks(query: str, index_filename: str, metadata_filename: str,
     documents = [item["text"] for item in metadata]
     bm25 = _build_bm25_index(documents)
     query_tokens = tokenize(query)
+    query_token_set = set(query_tokens)
     bm25_scores = bm25.get_scores(query_tokens)
 
     results = []
@@ -120,15 +136,56 @@ def retrieve_top_chunks(query: str, index_filename: str, metadata_filename: str,
                     "end_word": metadata[idx]["end_word"]
                 })
 
-        semantic_distances = [item["distance"] for item in semantic_candidates]
+        # Keep exact keyword matches in the pool; semantic search can otherwise
+        # discard clinically important chunks that contain the queried term.
+        keyword_indices = np.argsort(bm25_scores)[::-1][: min(10, len(metadata))]
+        candidate_by_index = {item["idx"]: item for item in semantic_candidates}
+        for idx in keyword_indices:
+            idx = int(idx)
+            if idx in candidate_by_index:
+                continue
+            candidate_by_index[idx] = {
+                "idx": idx,
+                "distance": None,
+                "text": metadata[idx]["text"],
+                "chunk_id": metadata[idx]["chunk_id"],
+                "start_word": metadata[idx]["start_word"],
+                "end_word": metadata[idx]["end_word"],
+            }
+        semantic_candidates = list(candidate_by_index.values())
+
+        semantic_distances = [
+            item["distance"] for item in semantic_candidates if item["distance"] is not None
+        ]
         semantic_similarity = 1 / (1 + np.array(semantic_distances, dtype="float32"))
         semantic_norm = normalize_scores(semantic_similarity)
+        semantic_by_index = {
+            item["idx"]: float(score)
+            for item, score in zip(
+                [item for item in semantic_candidates if item["distance"] is not None],
+                semantic_norm,
+            )
+        }
 
         bm25_candidate_scores = [bm25_scores[item["idx"]] for item in semantic_candidates]
         bm25_norm = normalize_scores(bm25_candidate_scores)
 
         for i, item in enumerate(semantic_candidates):
-            hybrid_score = 0.7 * float(semantic_norm[i]) + 0.3 * float(bm25_norm[i])
+            semantic_score = semantic_by_index.get(item["idx"], 0.0)
+            document_tokens = set(tokenize(item["text"]))
+            exact_coverage = (
+                len(query_token_set & document_tokens) / len(query_token_set)
+                if query_token_set
+                else 0.0
+            )
+            if exact_coverage:
+                hybrid_score = (
+                    0.1 * semantic_score
+                    + 0.4 * float(bm25_norm[i])
+                    + 0.5 * exact_coverage
+                )
+            else:
+                hybrid_score = 0.7 * semantic_score + 0.3 * float(bm25_norm[i])
 
             results.append({
                 "rank": 0,
@@ -136,8 +193,9 @@ def retrieve_top_chunks(query: str, index_filename: str, metadata_filename: str,
                 "text": item["text"],
                 "start_word": item["start_word"],
                 "end_word": item["end_word"],
-                "semantic_score": float(semantic_norm[i]),
+                "semantic_score": semantic_score,
                 "keyword_score": float(bm25_norm[i]),
+                "exact_coverage": exact_coverage,
                 "hybrid_score": hybrid_score,
                 "score": hybrid_score
             })
@@ -162,7 +220,17 @@ def retrieve_top_chunks(query: str, index_filename: str, metadata_filename: str,
                 "score": keyword_score
             })
 
-    results.sort(key=lambda x: x["hybrid_score"], reverse=True)
+    if any(item.get("exact_coverage", 0.0) > 0 for item in results):
+        results.sort(
+            key=lambda x: (
+                x.get("exact_coverage", 0.0),
+                x.get("keyword_score", 0.0),
+                x.get("semantic_score", 0.0),
+            ),
+            reverse=True,
+        )
+    else:
+        results.sort(key=lambda x: x["hybrid_score"], reverse=True)
 
     for i, item in enumerate(results):
         item["rank"] = i + 1

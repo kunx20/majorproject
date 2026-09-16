@@ -23,7 +23,8 @@ def _keyword_overlap(question: str, context: str) -> float:
         'first', 'line', 'treatment', 'question', 'answer', 'main', 'point', 'guide',
         'guidelines', 'general', 'medical', 'information', 'patient', 'health', 'about',
         'this', 'that', 'there', 'these', 'those', 'more', 'most', 'into', 'from', 'of',
-        'on', 'in', 'to', 'be', 'it', 'as', 'or', 'and', 'not', 'used', 'provide', 'provided'
+        'on', 'in', 'to', 'be', 'it', 'as', 'or', 'and', 'not', 'used', 'provide', 'provided',
+        'signs', 'symptoms', 'common', 'related', 'condition', 'conditions'
     }
 
     q_tokens = {
