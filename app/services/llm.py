@@ -13,6 +13,35 @@ except Exception as e:
     print(f"✗ Warning: Ollama service not available - using fallback: {str(e)}")
 
 
+def _keyword_overlap(question: str, context: str) -> float:
+    """Return a rough relevance score based on shared meaningful keywords."""
+    import re
+
+    stopwords = {
+        'what', 'when', 'where', 'why', 'how', 'is', 'are', 'the', 'a', 'an', 'for',
+        'with', 'without', 'should', 'can', 'could', 'would', 'do', 'does', 'did',
+        'first', 'line', 'treatment', 'question', 'answer', 'main', 'point', 'guide',
+        'guidelines', 'general', 'medical', 'information', 'patient', 'health', 'about',
+        'this', 'that', 'there', 'these', 'those', 'more', 'most', 'into', 'from', 'of',
+        'on', 'in', 'to', 'be', 'it', 'as', 'or', 'and', 'not', 'used', 'provide', 'provided'
+    }
+
+    q_tokens = {
+        t for t in re.findall(r"\b\w+\b", question.lower())
+        if len(t) > 2 and t not in stopwords
+    }
+    c_tokens = {
+        t for t in re.findall(r"\b\w+\b", context.lower())
+        if len(t) > 2 and t not in stopwords
+    }
+
+    if not q_tokens or not c_tokens:
+        return 0.0
+
+    overlap = q_tokens & c_tokens
+    return len(overlap) / max(1, len(q_tokens))
+
+
 def generate_answer_with_ollama_chat(question: str, context: str) -> str:
     """
     Generate a medical answer using Ollama LLM based on retrieved clinical guidelines.
@@ -25,6 +54,12 @@ def generate_answer_with_ollama_chat(question: str, context: str) -> str:
     Returns:
         A well-formatted, accurate medical answer
     """
+    if not context or not context.strip():
+        return "I could not find relevant information in the uploaded clinical guidelines for this question. Please ask about a topic covered in the provided guideline documents."
+
+    if _keyword_overlap(question, context) < 0.05:
+        return "I could not find relevant information in the uploaded clinical guidelines for this question. The provided guideline content does not appear to match the topic you asked about."
+
     if not OLLAMA_AVAILABLE or not settings.USE_LLM:
         # Fallback: Use simple context extraction
         return generate_answer_fallback(question, context)
