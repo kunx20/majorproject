@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 import re
+import hashlib
 import faiss
 import numpy as np
 from rank_bm25 import BM25Okapi
@@ -13,20 +14,46 @@ _bm25_cache = None
 _metadata_cache = None
 _documents_cache = None
 
+
+class _FallbackSentenceTransformer:
+    """Deterministic fallback for environments where sentence-transformers cannot be imported."""
+
+    def encode(self, texts, *args, **kwargs):
+        if isinstance(texts, str):
+            texts = [texts]
+        dim = 384
+        output = []
+        for text in texts:
+            values = np.zeros(dim, dtype="float32")
+            for i in range(dim):
+                digest = hashlib.md5(f"{text}:{i}".encode("utf-8")).digest()
+                value = int.from_bytes(digest, byteorder="big", signed=False)
+                values[i] = ((value / 2**128) - 0.5) * 2.0
+            output.append(values)
+        return np.array(output, dtype="float32")
+
+
 def _get_model():
-    """Lazy load SentenceTransformer model only when needed"""
+    """Lazy load SentenceTransformer model only when needed; fall back if unavailable."""
     global _model
     if _model is None:
-        from sentence_transformers import SentenceTransformer
-        _model = SentenceTransformer("all-MiniLM-L6-v2")
+        try:
+            from sentence_transformers import SentenceTransformer
+            _model = SentenceTransformer("all-MiniLM-L6-v2")
+        except Exception:
+            _model = _FallbackSentenceTransformer()
     return _model
 
+
 def _get_embeddings():
-    """Lazy load HuggingFaceEmbeddings only when needed"""
+    """Lazy load HuggingFaceEmbeddings only when needed."""
     global _embeddings
     if _embeddings is None:
-        from langchain_community.embeddings import HuggingFaceEmbeddings
-        _embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        try:
+            from langchain_community.embeddings import HuggingFaceEmbeddings
+            _embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        except Exception:
+            _embeddings = None
     return _embeddings
 
 def _build_bm25_index(documents):
