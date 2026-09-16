@@ -1,3 +1,6 @@
+import re
+
+
 def is_unsafe_medical_query(question: str) -> bool:
     unsafe_keywords = [
         "emergency",
@@ -6,14 +9,18 @@ def is_unsafe_medical_query(question: str) -> bool:
         "suicide",
         "bleeding heavily",
         "not breathing",
+        "can't breathe",
+        "can t breathe",
+        "cannot breathe",
+        "difficulty breathing",
         "pregnant complication",
-        "severe chest pain",
+        "chest pain",
         "unconscious",
         "diagnose me",
         "what disease do i have"
     ]
 
-    q = question.lower()
+    q = re.sub(r"[^a-z0-9]+", " ", question.lower()).strip()
     return any(keyword in q for keyword in unsafe_keywords)
 
 

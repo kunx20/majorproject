@@ -58,7 +58,13 @@ def ask_question(payload: AskRequest):
         
     except Exception as e:
         print(f"LLM generation error: {e}")
-        answer = f"Unable to generate answer: {str(e)}"
+        answer = (
+            "Unable to generate an answer from the clinical guidelines right now. "
+            + get_safety_message()
+        )
+        status = "error"
+    else:
+        status = "success"
 
     # Prepare citations with source information
     citations = [
@@ -74,7 +80,7 @@ def ask_question(payload: AskRequest):
         question=payload.question,
         answer=answer,
         citations=citations,
-        status="success"
+        status=status
     )
 
 @router.get("/evaluate")

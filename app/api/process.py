@@ -1,17 +1,17 @@
-from pathlib import Path
 import json
 from fastapi import APIRouter, HTTPException
+from app.core.paths import data_path, safe_filename
 from app.services.cleaner import clean_extracted_text
 from app.services.chunker import chunk_text
 
 router = APIRouter()
 
-PROCESSED_DIR = Path("data/processed")
-CHUNKS_DIR = Path("data/chunks")
-CHUNKS_DIR.mkdir(parents=True, exist_ok=True)
+PROCESSED_DIR = data_path("processed")
+CHUNKS_DIR = data_path("chunks")
 
 @router.post("/process/{filename}")
 def process_guideline(filename: str):
+    filename = safe_filename(filename, ".txt")
     input_path = PROCESSED_DIR / filename
 
     if not input_path.exists():
@@ -23,7 +23,7 @@ def process_guideline(filename: str):
     cleaned_text = clean_extracted_text(raw_text)
     chunks = chunk_text(cleaned_text, chunk_size=300, overlap=50)
 
-    output_filename = filename.replace(".txt", "_chunks.json")
+    output_filename = f"{input_path.stem}_chunks.json"
     output_path = CHUNKS_DIR / output_filename
 
     with open(output_path, "w", encoding="utf-8") as f:

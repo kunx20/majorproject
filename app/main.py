@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -9,15 +10,28 @@ from app.api.ingest import router as ingest_router
 from app.api.process import router as process_router
 from app.api.embed import router as embed_router
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Pre-load the embedding model before serving requests."""
+    try:
+        from app.services.retriever import _get_model
+        _get_model()
+        print("Embedding model pre-loaded successfully")
+    except Exception as error:
+        print(f"Failed to pre-load embedding model: {error}")
+    yield
+
+
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    debug=settings.DEBUG
+    debug=settings.DEBUG,
+    lifespan=lifespan,
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -29,16 +43,6 @@ app.include_router(process_router, prefix="/api", tags=["Process"])
 app.include_router(embed_router, prefix="/api", tags=["Embed"])
 
 FRONTEND_INDEX = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
-
-@app.on_event("startup")
-def startup_event():
-    """Pre-load models at startup for faster first request"""
-    try:
-        from app.services.retriever import _get_model
-        _get_model()  # Pre-load embedding model
-        print("✓ Embedding model pre-loaded successfully")
-    except Exception as e:
-        print(f"✗ Failed to pre-load embedding model: {e}")
 
 @app.get("/")
 def root():
