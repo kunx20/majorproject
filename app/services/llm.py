@@ -7,10 +7,10 @@ try:
     # Try to connect to Ollama
     ollama.list()
     OLLAMA_AVAILABLE = True
-    print("✓ Ollama service is available")
+    print("Ollama service is available")
 except Exception as e:
     OLLAMA_AVAILABLE = False
-    print(f"✗ Warning: Ollama service not available - using fallback: {str(e)}")
+    print(f"Warning: Ollama service not available - using fallback: {str(e)}")
 
 
 def _keyword_overlap(question: str, context: str) -> float:

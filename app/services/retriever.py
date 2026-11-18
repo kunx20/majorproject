@@ -197,7 +197,7 @@ def retrieve_top_chunks(query: str, index_filename: str, metadata_filename: str,
                 "score": hybrid_score
             })
     except Exception as exc:
-        print(f"✗ Warning: semantic retrieval unavailable, using BM25-only fallback: {exc}")
+        print(f"Warning: semantic retrieval unavailable, using BM25-only fallback: {exc}")
         ranked_indices = np.argsort(bm25_scores)[::-1][:top_k]
 
         for idx in ranked_indices:
