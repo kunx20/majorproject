@@ -135,7 +135,7 @@ Please:
         return generate_answer_fallback(question, context)
 
 
-def generate_answer_fallback(question: str, context: str) -> str:
+def generate_answer_fallback(_question: str, context: str) -> str:
     """Fallback answer generation when Ollama is unavailable"""
     answer = context.strip()
     if len(answer) > 500:

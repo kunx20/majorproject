@@ -1,18 +1,15 @@
-from pathlib import Path
 import json
 import re
 import hashlib
 import faiss
 import numpy as np
 from rank_bm25 import BM25Okapi
-from langchain_community.vectorstores import FAISS as LangChainFAISS
 from app.core.paths import data_path
 
 # Global caches for performance
 _model = None
 _embeddings = None
 _bm25_cache = None
-_metadata_cache = None
 _documents_cache = None
 
 RETRIEVAL_STOPWORDS = {
@@ -30,7 +27,7 @@ RETRIEVAL_STOPWORDS = {
 class _FallbackSentenceTransformer:
     """Deterministic fallback for environments where sentence-transformers cannot be imported."""
 
-    def encode(self, texts, *args, **kwargs):
+    def encode(self, texts, *_args, **_kwargs):
         if isinstance(texts, str):
             texts = [texts]
         dim = 384
@@ -126,7 +123,7 @@ def retrieve_top_chunks(query: str, index_filename: str, metadata_filename: str,
 
         semantic_candidates = []
         for rank, idx in enumerate(indices[0]):
-            if idx < len(metadata):
+            if 0 <= idx < len(metadata):
                 semantic_candidates.append({
                     "idx": int(idx),
                     "distance": float(distances[0][rank]),
@@ -245,6 +242,8 @@ class GuidelineRetriever:
 
     def build_index(self, chunks):
         """Build FAISS index from text chunks"""
+        from langchain_community.vectorstores import FAISS as LangChainFAISS
+
         embeddings = _get_embeddings()
         self.vectorstore = LangChainFAISS.from_texts(chunks, embeddings)
 

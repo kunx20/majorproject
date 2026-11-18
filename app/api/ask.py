@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.ask import AskRequest, AskResponse, Citation
 from app.services.retriever import retrieve_top_chunks
 from app.core.safety import is_unsafe_medical_query, get_safety_message
-from app.core.config import settings
 from app.services.llm import generate_answer_with_ollama_chat
 
 router = APIRouter()

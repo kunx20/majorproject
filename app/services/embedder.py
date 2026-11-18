@@ -7,7 +7,7 @@ _model = None
 class _FallbackSentenceTransformer:
     """Minimal deterministic fallback when sentence-transformers cannot load."""
 
-    def encode(self, texts, *args, **kwargs):
+    def encode(self, texts, *_args, **_kwargs):
         if isinstance(texts, str):
             texts = [texts]
         dim = 384
