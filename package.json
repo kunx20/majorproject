@@ -1,0 +1,10 @@
+{
+  "name": "clinical-guideline-qa",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "dependencies": {
+    "@google/genai": "^3.6.1",
+    "hono": "^4.13.19"
+  }
+}
