@@ -1,0 +1,9 @@
+.git
+.gitignore
+.venv
+venv
+__pycache__
+.pytest_cache
+tests
+.github
+streamlit_app.py

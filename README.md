@@ -139,6 +139,14 @@ curl http://localhost:11434/api/tags
 - **With LLM disabled (`USE_LLM=false`)**: Falls back to rule-based text simplification (original behavior)
 - **Automatic fallback**: If Ollama is unavailable, the system automatically falls back to rule-based answers
 
+### Serverless deployment
+
+The project includes `api/index.py` and `vercel.json` for FastAPI deployment.
+Set `GEMINI_API_KEY` and `GEMINI_MODEL` in the hosting provider environment.
+The deployed bundle intentionally excludes PyTorch, Transformers,
+Sentence-Transformers, FAISS, pandas, and Streamlit to stay below serverless
+size limits. The app uses the included BM25 index and guideline metadata.
+
 ## Usage
 
 ### Start the API Server
