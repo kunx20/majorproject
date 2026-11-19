@@ -46,3 +46,8 @@ htmlcov/
 
 # Data (optional - uncomment if needed)
 # data/
+
+# Node
+node_modules/
+.netlify/*
+!.netlify/results.md
