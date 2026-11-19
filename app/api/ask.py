@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.ask import AskRequest, AskResponse, Citation
 from app.services.retriever import retrieve_top_chunks
 from app.core.safety import is_unsafe_medical_query, get_safety_message
-from app.services.llm import generate_answer_with_ollama_chat
+from app.services.llm import generate_answer_from_guidelines
 
 router = APIRouter()
 
@@ -52,7 +52,7 @@ def ask_question(payload: AskRequest):
     try:
         # Generate answer using LLM
         context = "\n\n".join([item["text"] for item in results[:3]])
-        answer = generate_answer_with_ollama_chat(payload.question, context)
+        answer = generate_answer_from_guidelines(payload.question, context)
 
         if answer.strip().startswith(NO_RELEVANT_PREFIX):
             return AskResponse(

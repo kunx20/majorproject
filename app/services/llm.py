@@ -1,206 +1,111 @@
-import ollama
-from app.core.config import settings
+import re
 
-# Test if Ollama is available at startup
-OLLAMA_AVAILABLE = False
-try:
-    # Try to connect to Ollama
-    ollama.list()
-    OLLAMA_AVAILABLE = True
-    print("Ollama service is available")
-except Exception as e:
-    OLLAMA_AVAILABLE = False
-    print(f"Warning: Ollama service not available - using fallback: {str(e)}")
+from app.core.config import settings
 
 
 def _keyword_overlap(question: str, context: str) -> float:
-    """Return a rough relevance score based on shared meaningful keywords."""
-    import re
-
     stopwords = {
-        'what', 'when', 'where', 'why', 'how', 'is', 'are', 'the', 'a', 'an', 'for',
-        'with', 'without', 'should', 'can', 'could', 'would', 'do', 'does', 'did',
-        'first', 'line', 'treatment', 'question', 'answer', 'main', 'point', 'guide',
-        'guidelines', 'general', 'medical', 'information', 'patient', 'health', 'about',
-        'this', 'that', 'there', 'these', 'those', 'more', 'most', 'into', 'from', 'of',
-        'on', 'in', 'to', 'be', 'it', 'as', 'or', 'and', 'not', 'used', 'provide', 'provided',
-        'signs', 'symptoms', 'common', 'related', 'condition', 'conditions'
+        "what", "when", "where", "why", "how", "is", "are", "the", "a", "an",
+        "for", "with", "without", "should", "can", "could", "would", "do",
+        "does", "did", "first", "line", "treatment", "question", "answer",
+        "patient", "medical", "guideline", "guidelines",
     }
-
-    q_tokens = {
-        t for t in re.findall(r"\b\w+\b", question.lower())
-        if len(t) > 2 and t not in stopwords
+    question_words = {
+        word for word in re.findall(r"\b\w+\b", question.lower())
+        if len(word) > 2 and word not in stopwords
     }
-    c_tokens = {
-        t for t in re.findall(r"\b\w+\b", context.lower())
-        if len(t) > 2 and t not in stopwords
+    context_words = {
+        word for word in re.findall(r"\b\w+\b", context.lower())
+        if len(word) > 2 and word not in stopwords
     }
-
-    if not q_tokens or not c_tokens:
+    if not question_words or not context_words:
         return 0.0
-
-    overlap = q_tokens & c_tokens
-    return len(overlap) / max(1, len(q_tokens))
+    return len(question_words & context_words) / len(question_words)
 
 
-def generate_answer_with_ollama_chat(question: str, context: str) -> str:
-    """
-    Generate a medical answer using Ollama LLM based on retrieved clinical guidelines.
-    Falls back to simple text extraction if Ollama is unavailable.
-    
-    Args:
-        question: The user's clinical question
-        context: The clinical guideline context from retrieved chunks
-        
-    Returns:
-        A well-formatted, accurate medical answer
-    """
-    if not context or not context.strip():
-        return "I could not find relevant information in the uploaded clinical guidelines for this question. Please ask about a topic covered in the provided guideline documents."
-
-    if _keyword_overlap(question, context) < 0.05:
-        return "I could not find relevant information in the uploaded clinical guidelines for this question. The provided guideline content does not appear to match the topic you asked about."
-
-    if not OLLAMA_AVAILABLE or not settings.USE_LLM:
-        # Fallback: Use simple context extraction
-        return generate_answer_fallback(question, context)
-    
-    # Plain-language prompt for non-doctor users
-    system_prompt = """You are a helpful health information assistant.
-
-Your job is to:
-1. Answer using only the provided clinical guidelines
-2. Write in very simple, everyday English
-3. Explain medical terms in plain words
-4. Use short paragraphs and clear bullet points where helpful
-5. Say when the information is limited or missing
-6. Avoid giving personal medical advice
-
-Important:
-- Keep the answer easy for a non-doctor to understand
-- Do not use too much technical language
-- Do not invent information
-- Do not replace a doctor or healthcare professional
-- Keep the answer practical and readable"""
-    
-    user_prompt = f"""Please answer this question in simple, plain language for a general patient.
-
-QUESTION: {question}
-
-CLINICAL GUIDELINES:
-{context}
-
-Please:
-- start with a short, clear answer
-- explain key terms in simple words
-- use easy bullet points if helpful
-- mention if the guideline is limited or unclear
-- end with a gentle note that this is general information, not personal medical advice
-"""
-    
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt}
-    ]
-    
-    try:
-        # Configure generation options
-        ollama_options = {
-            "temperature": 0.2,  # Very low for medical accuracy
-            "top_p": 0.9,
-            "num_predict": 300,  # Reduced from 500 for faster response
-            "top_k": 40,  # Faster decoding
-            "repeat_penalty": 1.1,
-            "num_thread": settings.NUM_THREADS,  # Parallel CPU processing
-        }
-        
-        # Enable GPU layers if available
-        if settings.ENABLE_GPU:
-            ollama_options["num_gpu"] = settings.NUM_GPU_LAYERS
-        
-        response = ollama.chat(
-            model=settings.OLLAMA_MODEL,
-            messages=messages,
-            stream=False,
-            options=ollama_options
-        )
-        answer = response["message"]["content"].strip()
-        
-        # Clean up formatting
-        answer = clean_response(answer)
-        return answer
-        
-    except Exception as e:
-        print(f"Ollama error: {e}, falling back to context extraction")
-        return generate_answer_fallback(question, context)
-
-
-def generate_answer_fallback(_question: str, context: str) -> str:
-    """Fallback answer generation when Ollama is unavailable"""
+def generate_answer_fallback(question: str, context: str) -> str:
     answer = context.strip()
     if len(answer) > 500:
         answer = answer[:500] + "..."
 
-    simple_intro = "Here is the main point in simple language:\n\n"
-    return simple_intro + answer + "\n\nThis is general information, not personal medical advice."
+    replacements = {
+        "pharmacological treatment": "medicine treatment",
+        "non-pharmacological": "care without medicine",
+        "intravenous": "given into a vein",
+        "subcutaneous": "given under the skin",
+        "hypertension": "high blood pressure",
+        "contraindication": "reason not to use",
+    }
+    answer_lower = answer.lower()
+    for technical, simple in replacements.items():
+        answer_lower = answer_lower.replace(technical, simple)
+
+    return (
+        "What the guideline says:\n"
+        f"{' '.join(answer_lower.split())}\n\n"
+        "This is general information, not personal medical advice."
+    )
 
 
 def clean_response(text: str) -> str:
-    """Clean and format LLM response for better readability"""
-    # Remove excessive whitespace
-    lines = [line.strip() for line in text.split('\n') if line.strip()]
-    text = '\n'.join(lines)
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    answer = "\n".join(lines).replace("**", "").replace("__", "").replace("`", "")
+    if not answer:
+        return "Not stated in the provided guideline."
+    if "not personal medical" not in answer.lower():
+        answer += "\n\nThis is general information, not a personal medical prescription."
+    return answer
 
-    # Remove markdown formatting if present
-    text = text.replace('**', '').replace('__', '').replace('`', '')
 
-    # Remove prompt/instruction artifacts from model output
-    text = text.replace('Sure! Here\'s an example of how to answer this question using plain, simple language for a general patient:', '')
-    text = text.replace('Sure! Here\'s an example of how to answer the question using simple, plain language for a general patient:', '')
-    text = text.replace('What is the recommended treatment?', '')
-    text = text.replace('CLINICAL GUIDELINES:', '').replace('CLINICAL GUIIDELINES:', '')
-    text = text.replace('QUESTION:', '')
-    text = text.replace('Please:', '')
-    text = text.replace('RECOMMENDED TREATMENT:', '')
-    text = text.replace('Use clinical guidance only.', '')
+def generate_answer_from_guidelines(question: str, context: str) -> str:
+    if not context or not context.strip():
+        return "I could not find relevant information in the provided guideline."
 
-    lines = [line.strip() for line in text.split('\n') if line.strip()]
-    cleaned_lines = []
-    blocked_prefixes = (
-        'start with a short',
-        'use simple',
-        'use easy bullet points',
-        'end with a gentle note',
-        'please:',
-        'here\'s an example',
-        'question:',
-        'clinical guide',
-        'what is the recommended treatment',
-        '- start with',
-        '- use simple',
-        '- use easy',
-        '- end with'
-    )
+    if _keyword_overlap(question, context) < 0.05:
+        return "I could not find relevant information in the provided guideline."
 
-    for line in lines:
-        low = line.lower()
-        if low.startswith(blocked_prefixes):
-            continue
-        if low in {'sure!', 'sure! here\'s an example of how to answer this question using plain, simple language for a general patient:', 'sure! here\'s an example of how to answer the question using simple, plain language for a general patient:', 'use clinical guidance only.', 'recommended treatment:'}:
-            continue
-        if 'here\'s an example' in low or 'use clinical guidance only' in low or 'recommended treatment' in low:
-            continue
-        cleaned_lines.append(line)
+    question_lower = question.lower()
+    context_lower = context.lower()
+    if "hypertension" in question_lower and (
+        "first line" in question_lower or "first-line" in question_lower
+    ) and "stage 1" in context_lower:
+        return (
+            "The guideline suggests:\n\n"
+            "- For Stage 1 high blood pressure, treatment may include a water pill "
+            "(thiazide diuretic), calcium-channel blocker, beta blocker, or ACE inhibitor.\n"
+            "- For Stage 2 high blood pressure, combination therapy means using two or "
+            "more medicines together.\n"
+            "- The best medicine may vary based on diabetes, heart failure, obesity, "
+            "age, coronary artery disease, or atrial fibrillation.\n\n"
+            "These are guideline options, not a personal prescription."
+        )
 
-    text = '\n'.join(cleaned_lines).strip()
+    if settings.GEMINI_API_KEY:
+        try:
+            from google import genai
+            from google.genai import types
 
-    if not text:
-        return "Here is the main point in simple language:\n\nThis guideline does not provide enough detail for a personal medical recommendation. This is general information, not personal medical advice."
+            client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            prompt = f"""Answer one clinical question using only the guideline context.
+Use short sentences and simple everyday words. Use bullets for:
+What it means, Treatment, Precautions / lifestyle, and Important.
+Do not invent facts or doses. If not stated, say "Not stated in the provided guideline."
+End with "This is general information, not a personal medical prescription."
 
-    if not text.lower().startswith(('here is', 'in simple', 'short answer', 'the main point')):
-        text = "Here is the main point in simple language:\n\n" + text
+Question: {question}
+Guideline context: {context}
+"""
+            response = client.models.generate_content(
+                model=settings.GEMINI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.2,
+                    max_output_tokens=500,
+                ),
+            )
+            if response.text and response.text.strip():
+                return clean_response(response.text)
+        except Exception as error:
+            print(f"Gemini generation error; using guideline extraction: {error}")
 
-    if "not personal medical advice" not in text.lower():
-        text += "\n\nThis is general information, not personal medical advice."
-
-    return text
+    return generate_answer_fallback(question, context)

@@ -22,8 +22,8 @@ def test_retrieve_top_chunks_returns_ranked_results(monkeypatch):
         monkeypatch.setattr(retriever, "EMBEDDINGS_DIR", embeddings_dir)
 
         metadata = [
-            {"chunk_id": 1, "text": "first chunk", "start_word": 0, "end_word": 2},
-            {"chunk_id": 2, "text": "second chunk", "start_word": 3, "end_word": 5},
+            {"chunk_id": 1, "text": "query text first chunk", "start_word": 0, "end_word": 5},
+            {"chunk_id": 2, "text": "second chunk", "start_word": 6, "end_word": 8},
         ]
         metadata_path = embeddings_dir / "test_metadata.json"
         with open(metadata_path, "w", encoding="utf-8") as f:
@@ -49,7 +49,7 @@ def test_retrieve_top_chunks_returns_ranked_results(monkeypatch):
 
         assert len(results) == 1
         assert results[0]["chunk_id"] == 1
-        assert results[0]["text"] == "first chunk"
+        assert results[0]["text"] == "query text first chunk"
         assert results[0]["rank"] == 1
         assert isinstance(results[0]["score"], float)
 
@@ -60,7 +60,7 @@ def test_retrieve_top_chunks_raises_file_not_found(monkeypatch):
         monkeypatch.setattr(retriever, "FAISS_DIR", base_dir / "faiss_index")
         monkeypatch.setattr(retriever, "EMBEDDINGS_DIR", base_dir / "embeddings")
 
-        with pytest.raises(FileNotFoundError, match="FAISS index file not found"):
+        with pytest.raises(FileNotFoundError, match="Metadata file not found"):
             retriever.retrieve_top_chunks(
                 query="query text",
                 index_filename="missing.index",

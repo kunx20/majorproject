@@ -12,13 +12,7 @@ from app.api.embed import router as embed_router
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """Pre-load the embedding model before serving requests."""
-    try:
-        from app.services.retriever import _get_model
-        _get_model()
-        print("Embedding model pre-loaded successfully")
-    except Exception as error:
-        print(f"Failed to pre-load embedding model: {error}")
+    """Start the server without downloading or preloading ML models."""
     yield
 
 

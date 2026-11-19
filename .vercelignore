@@ -7,3 +7,14 @@ __pycache__
 tests
 .github
 streamlit_app.py
+data/raw_guidelines
+data/faiss_index
+data/embeddings/*.npy
+data/chunks
+data/processed
+frontend
+tests
+.coverage
+.pytest_cache
+__pycache__
+*.pyc
